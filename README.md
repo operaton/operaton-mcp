@@ -47,6 +47,46 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
+## Example Prompts
+
+Once connected, you can ask your AI assistant natural-language questions about your Operaton instance:
+
+**Deployments & Definitions**
+> "Deploy this BPMN file to Operaton and name it `loan-approval-v3`."
+> "List all deployed versions of the `invoice-approval` process."
+> "Show me the BPMN XML for the latest version of the `onboarding` process."
+> "Delete the old `loan-approval` definition — it has no active instances."
+
+**Process Instances**
+> "Start a new `invoice-approval` process with business key `INV-2024-001` and set the `amount` variable to 15000."
+> "List all active instances of the `loan-approval` process."
+> "Suspend the instance `abc-123` while we investigate the failure."
+> "What variables are currently set on process instance `abc-123`?"
+
+**User Tasks**
+> "Show me all unassigned tasks for the `approvers` group."
+> "Claim task `task-456` for user `john.doe`."
+> "Complete the approval task for invoice INV-2024-001 and set `approved = true`."
+> "How many overdue tasks are there across all processes?"
+
+**Operations & Incidents**
+> "Are there any failed jobs with no retries left?"
+> "Reset the retry count to 3 for job `job-789` and trigger immediate execution."
+> "List all open incidents for the `payment-processing` process."
+
+**History & Audit**
+> "Show me all completed `invoice-approval` instances from last week."
+> "What activities were executed in process instance `abc-123`, and how long did each take?"
+> "Who completed the approval task for business key `INV-2024-001`, and when?"
+
+**Decisions**
+> "Deploy this DMN decision table for loan eligibility checking."
+> "Evaluate the `credit-check` decision with `income = 50000` and `creditScore = 720`."
+
+**Administration**
+> "Create a new user `jane.smith` with email `jane@example.com`."
+> "Add `john.doe` to the `senior-approvers` group."
+
 ## Available Tool Groups
 
 | Group | Description |
