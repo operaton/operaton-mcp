@@ -19,4 +19,4 @@ distributions:
   operaton-mcp:
     type: FLAT_BINARY
     artifacts:
-      - path: '{{projectName}}-{{projectVersion}}.tgz'
+      - path: 'operaton-operaton-mcp-{{projectVersion}}.tgz'
