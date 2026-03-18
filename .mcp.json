@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "operaton-mcp": {
+      "command": "operaton-mcp",
+      "env": {
+        "OPERATON_BASE_URL": "http://localhost:8080/engine-rest",
+        "OPERATON_USERNAME": "admin",
+        "OPERATON_PASSWORD": "admin",
+        "OPERATON_SKIP_HEALTH_CHECK": "true"
+      }
+    }
+  }
+}
