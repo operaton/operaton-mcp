@@ -25,6 +25,37 @@ export interface OperatonClient {
   delete(path: string): Promise<unknown>;
 }
 
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const body = error as Record<string, unknown>;
+    if (typeof body["message"] === "string") {
+      return body["message"];
+    }
+    if (typeof body["cause"] === "string") {
+      return body["cause"];
+    }
+  }
+
+  return String(error);
+}
+
+async function parseResponseBody(response: Response): Promise<unknown | null> {
+  const text = await response.text();
+  if (text.trim() === "") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
 async function buildAuthHeader(
   engineName: string,
   engine: EngineConfig,
@@ -42,7 +73,7 @@ async function buildAuthHeader(
     } catch (err) {
       throw {
         type: "auth_error",
-        cause: `OIDC authentication failed: ${(err as Error).message}`,
+        message: `OIDC authentication failed: ${extractErrorMessage(err)}`,
       };
     }
   }
@@ -71,7 +102,12 @@ export function createOperatonClient(
   ): Promise<unknown> {
     const resolvedPath = resolvePath(path);
     const url = `${baseUrl}${resolvedPath}`;
-    const authHeader = await buildAuthHeader(resolvedEngineName, engine!);
+    let authHeader: string;
+    try {
+      authHeader = await buildAuthHeader(resolvedEngineName, engine);
+    } catch (error) {
+      return normalize(error);
+    }
     const headers: Record<string, string> = {
       Authorization: authHeader,
       Accept: "application/json",
@@ -85,17 +121,10 @@ export function createOperatonClient(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (!response.ok) {
-      const text = await response.text();
-      let errorBody: unknown;
-      try {
-        errorBody = JSON.parse(text) as unknown;
-      } catch {
-        errorBody = text;
-      }
+      const errorBody = await parseResponseBody(response);
       return normalize(errorBody) as McpToolError;
     }
-    const text = await response.text();
-    return text ? (JSON.parse(text) as unknown) : {};
+    return parseResponseBody(response);
   }
 
   async function requestMultipart(
@@ -104,7 +133,12 @@ export function createOperatonClient(
   ): Promise<unknown> {
     const resolvedPath = resolvePath(path);
     const url = `${baseUrl}${resolvedPath}`;
-    const authHeader = await buildAuthHeader(resolvedEngineName, engine!);
+    let authHeader: string;
+    try {
+      authHeader = await buildAuthHeader(resolvedEngineName, engine);
+    } catch (error) {
+      return normalize(error);
+    }
     const form = new FormData();
     for (const [key, value] of Object.entries(fields)) {
       form.append(key, value);
@@ -115,17 +149,10 @@ export function createOperatonClient(
       body: form,
     });
     if (!response.ok) {
-      const text = await response.text();
-      let errorBody: unknown;
-      try {
-        errorBody = JSON.parse(text) as unknown;
-      } catch {
-        errorBody = text;
-      }
+      const errorBody = await parseResponseBody(response);
       return normalize(errorBody) as McpToolError;
     }
-    const text = await response.text();
-    return text ? (JSON.parse(text) as unknown) : {};
+    return parseResponseBody(response);
   }
 
   return {

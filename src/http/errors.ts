@@ -31,8 +31,14 @@ const ERROR_MAP: Record<string, ErrorEntry> = {
   AuthorizationException: {
     hint: "Verify the user has the required permissions for this resource or operation",
   },
+  UserAlreadyExistsException: {
+    hint: "Choose a different user ID — this ID is already taken",
+  },
   NotFoundException: {
     hint: "Verify the resource ID exists and has not been deleted or completed",
+  },
+  MembershipNotFoundException: {
+    hint: "The user is not a member of this group",
   },
   TaskAlreadyClaimedException: {
     hint: "Unclaim the task first using the unclaim operation before assigning to another user",
@@ -61,10 +67,34 @@ const ERROR_MAP: Record<string, ErrorEntry> = {
   DecisionEvaluationException: {
     hint: "Verify input variables match the decision table's input definitions",
   },
+  auth_error: {
+    hint: "Verify the OIDC token URL, client credentials, and identity provider availability",
+  },
   __unknown__: {
     hint: "Check Operaton server logs for more details on this error",
   },
 };
+
+function resolveHint(errorType: string, message: string): string {
+  if (
+    (errorType === "InvalidRequestException" ||
+      errorType === "UserAlreadyExistsException") &&
+    /already exists|already taken|duplicate/i.test(message)
+  ) {
+    return "Choose a different user ID — this ID is already taken";
+  }
+
+  if (
+    (errorType === "MembershipNotFoundException" ||
+      errorType === "NotFoundException" ||
+      errorType === "InvalidRequestException") &&
+    /member/i.test(message)
+  ) {
+    return "The user is not a member of this group";
+  }
+
+  return (ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"]).hint;
+}
 
 export function normalize(errorBody: unknown): McpToolError {
   let errorType = "__unknown__";
@@ -78,6 +108,8 @@ export function normalize(errorBody: unknown): McpToolError {
     }
     if (typeof body["message"] === "string") {
       message = body["message"];
+    } else if (typeof body["cause"] === "string") {
+      message = body["cause"];
     } else {
       rawBody = JSON.stringify(errorBody);
     }
@@ -86,11 +118,11 @@ export function normalize(errorBody: unknown): McpToolError {
     message = rawBody;
   }
 
-  const entry = ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"];
+  const hint = resolveHint(errorType, message);
   const text =
     rawBody && errorType === "__unknown__"
-      ? `[${errorType}] ${rawBody} — Suggested action: ${entry.hint}`
-      : `[${errorType}] ${message} — Suggested action: ${entry.hint}`;
+      ? `[${errorType}] ${rawBody} — Suggested action: ${hint}`
+      : `[${errorType}] ${message} — Suggested action: ${hint}`;
 
   return { isError: true, content: [{ type: "text", text }] };
 }

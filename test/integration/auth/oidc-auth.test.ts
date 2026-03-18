@@ -141,11 +141,13 @@ describe("OIDC error handling (AC 6)", () => {
     );
 
     const client = createOperatonClient(oidcResolvedConfig);
-    await expect(
-      client.get("/engine/default/process-definition"),
-    ).rejects.toMatchObject({
-      type: "auth_error",
-      cause: expect.stringContaining("OIDC authentication failed"),
-    });
+    const result = (await client.get("/engine/default/process-definition")) as {
+      isError: boolean;
+      content: Array<{ text: string }>;
+    };
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain("[auth_error]");
+    expect(result.content[0]?.text).toContain("OIDC authentication failed");
   });
 });

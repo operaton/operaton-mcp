@@ -14,23 +14,33 @@
 
 import type { UserConfig } from "@commitlint/types";
 
+const scopes = [
+  "process",
+  "task",
+  "job",
+  "incident",
+  "history",
+  "decision",
+  "user",
+  "deploy",
+  "config",
+  "ci",
+  "docs",
+  "test",
+  "build",
+  "deps",
+  "deps-dev",
+];
+
 const config: UserConfig = {
   extends: ["@commitlint/config-conventional"],
   rules: {
     "scope-enum": [
       2,
       "always",
-      [
-        "ci",
-        "config",
-        "deps",
-        "deps-dev",
-        "docs",
-        "epic-*",
-        "test",
-        "build"
-      ],
+      scopes,
     ],
+    "scope-empty": [0],
     "body-max-line-length": [2, "always", 180],
   },
 };

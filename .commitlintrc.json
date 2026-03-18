@@ -6,7 +6,8 @@
       "always",
       [
         "process", "task", "job", "incident", "history",
-        "decision", "user", "deploy", "config", "ci", "docs", "test"
+        "decision", "user", "deploy", "config", "ci", "docs", "test",
+        "build", "deps", "deps-dev"
       ]
     ],
     "scope-empty": [0]

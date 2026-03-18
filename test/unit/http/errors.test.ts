@@ -42,11 +42,40 @@ describe("normalize", () => {
     expect(result.content[0]?.text).toContain("permissions");
   });
 
+  it("normalizes auth_error with OIDC guidance", () => {
+    const body = {
+      type: "auth_error",
+      message: "OIDC authentication failed: HTTP 401 from https://auth.example.com/token",
+    };
+    const result = normalize(body);
+    expect(result.content[0]?.text).toContain("[auth_error]");
+    expect(result.content[0]?.text).toContain("OIDC authentication failed");
+    expect(result.content[0]?.text).toContain("OIDC token URL");
+  });
+
   it("normalizes TaskAlreadyClaimedException with unclaim hint", () => {
     const body = { type: "TaskAlreadyClaimedException", message: "Task claimed" };
     const result = normalize(body);
     expect(result.content[0]?.text).toContain("[TaskAlreadyClaimedException]");
     expect(result.content[0]?.text).toContain("unclaim");
+  });
+
+  it("special-cases duplicate identity conflicts for InvalidRequestException", () => {
+    const body = {
+      type: "InvalidRequestException",
+      message: "User already exists",
+    };
+    const result = normalize(body);
+    expect(result.content[0]?.text).toContain("Choose a different user ID");
+  });
+
+  it("normalizes group membership errors with a targeted hint", () => {
+    const body = {
+      type: "NotFoundException",
+      message: "Membership not found",
+    };
+    const result = normalize(body);
+    expect(result.content[0]?.text).toContain("not a member of this group");
   });
 
   it("uses __unknown__ fallback for unrecognized error types", () => {

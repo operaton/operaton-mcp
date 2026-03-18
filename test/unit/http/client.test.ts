@@ -113,6 +113,17 @@ describe("createOperatonClient — basic auth", () => {
     expect(result).toEqual(payload);
   });
 
+  it("returns null for successful 204 responses", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 204 }),
+    );
+
+    const client = createOperatonClient(basicConfig);
+    const result = await client.delete("/engine/{engineName}/user/test-user");
+
+    expect(result).toBeNull();
+  });
+
   it("returns normalized McpToolError on 4xx response", async () => {
     const errorBody = {
       type: "NotFoundException",
@@ -168,7 +179,7 @@ describe("createOperatonClient — OIDC auth", () => {
 
   it("calls getToken() and injects Authorization: Bearer header (AC 2)", async () => {
     // Mock the OIDC token fetch
-    vi.spyOn(globalThis, "fetch")
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({ access_token: "my-oidc-token", expires_in: 3600 }),
@@ -182,15 +193,11 @@ describe("createOperatonClient — OIDC auth", () => {
     const client = createOperatonClient(oidcConfig);
     await client.get("/engine/{engineName}/process-definition");
 
-    // The second fetch call should be the actual API call with Bearer token
-    const apiCall = vi.spyOn(globalThis, "fetch").mock.calls[1];
-    // Since we set up mocks before the client call, let's get the fetch calls differently
-    const allCalls = (vi.spyOn(globalThis, "fetch") as ReturnType<typeof vi.spyOn>).mock.calls;
-    void allCalls; // suppress unused warning
-
-    // Re-check: first call to fetch was the token endpoint, second was the API
-    const allFetchCalls = (globalThis.fetch as unknown as { mock: { calls: unknown[][] } }).mock?.calls;
-    void allFetchCalls;
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const apiCall = fetchSpy.mock.calls[1];
+    const options = apiCall![1] as RequestInit;
+    const headers = options.headers as Record<string, string>;
+    expect(headers["Authorization"]).toBe("Bearer my-oidc-token");
   });
 
   it("includes Authorization: Bearer header from token manager", async () => {
@@ -216,7 +223,7 @@ describe("createOperatonClient — OIDC auth", () => {
     expect(headers["Authorization"]).toBe("Bearer pre-seeded-token");
   });
 
-  it("propagates OIDC token failure as structured auth error (AC 4)", async () => {
+  it("returns OIDC token failure as structured auth error (AC 4)", async () => {
     clearTokenManagerRegistry();
     const oidcAuth = oidcConfig.engines["default"]!.authentication;
     if (oidcAuth.type !== "oidc") throw new Error("expected oidc");
@@ -227,10 +234,14 @@ describe("createOperatonClient — OIDC auth", () => {
     );
 
     const client = createOperatonClient(oidcConfig);
-    await expect(client.get("/some/path")).rejects.toMatchObject({
-      type: "auth_error",
-      cause: expect.stringContaining("OIDC authentication failed"),
-    });
+    const result = (await client.get("/some/path")) as {
+      isError: boolean;
+      content: Array<{ text: string }>;
+    };
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain("[auth_error]");
+    expect(result.content[0]?.text).toContain("OIDC authentication failed");
   });
 });
 
