@@ -94,8 +94,8 @@ development_status:
   epic-7-retrospective: optional
 
   # Epic 8: Decision & DMN Management
-  epic-8: in-progress
-  8-1-deploy-and-evaluate-dmn-decisions: review
+  epic-8: done
+  8-1-deploy-and-evaluate-dmn-decisions: done
   epic-8-retrospective: optional
 
   # Epic 9: OSS Project Standards & Release Automation
