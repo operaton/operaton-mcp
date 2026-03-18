@@ -31,8 +31,8 @@ describe("MCP Protocol Smoke", () => {
     process.env["OPERATON_SKIP_HEALTH_CHECK"] = "true";
 
     // Mock fetch to return empty array for any Operaton call
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify([]), { status: 200 }),
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () => new Response(JSON.stringify([]), { status: 200 }),
     );
 
     const config = loadConfig();
@@ -68,6 +68,29 @@ describe("MCP Protocol Smoke", () => {
     const result = await client.listTools();
     const toolNames = result.tools.map((t) => t.name);
     expect(toolNames).toContain("processDefinition_list");
+  });
+
+  it("tools/list includes deployment aliases for process and decision stories", async () => {
+    const result = await client.listTools();
+    const toolNames = result.tools.map((t) => t.name);
+    expect(toolNames).toContain("deployment_create");
+    expect(toolNames).toContain("processDefinition_deploy");
+    expect(toolNames).toContain("decision_deploy");
+  });
+
+  it("tools/call supports the processDefinition_deploy alias", async () => {
+    const result = await client.callTool({
+      name: "processDefinition_deploy",
+      arguments: {
+        "deployment-name": "test-deployment",
+        "bpmn-content": "<definitions />",
+        "bpmn-filename": "test-process.bpmn",
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0]).toHaveProperty("type", "text");
   });
 
   it("tools/call with valid tool returns content", async () => {

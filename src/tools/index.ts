@@ -74,6 +74,24 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       handler: (input, _client) =>
         deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
     },
+    {
+      name: "processDefinition_deploy",
+      description:
+        "Deploy a BPMN process definition to Operaton. Provide BPMN or DMN XML, a filename, and a deployment name. Returns deployment metadata and deployed definition keys.",
+      group: "processDefinition",
+      schema: deploymentCreateInputSchema,
+      handler: (input, _client) =>
+        deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+    },
+    {
+      name: "decision_deploy",
+      description:
+        "Deploy a DMN decision artifact to Operaton. Provide DMN XML, a .dmn filename, and a deployment name. Returns deployment metadata and deployed decision definition keys.",
+      group: "decision",
+      schema: deploymentCreateInputSchema,
+      handler: (input, _client) =>
+        deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+    },
     // ── Epic 12: Process Instance Migration ────────────────────────────────────
     {
       name: "processInstance_listMigratable",

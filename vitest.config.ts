@@ -8,6 +8,7 @@ export default defineConfig({
     },
   },
   test: {
+    fileParallelism: false,
     include: [
       "test/unit/**/*.test.ts",
       "test/smoke/**/*.test.ts",
