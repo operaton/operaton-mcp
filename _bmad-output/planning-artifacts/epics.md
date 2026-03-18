@@ -164,6 +164,13 @@ FR-32: Epic 7 — Query historic task instances
 FR-33: Epic 7 — Query historic variable instances
 FR-34: Epic 8 — Deploy DMN decision table
 FR-35: Epic 8 — Evaluate deployed decision table
+FR-36: Epic 9 — Operaton license headers on all source files + CI enforcement
+FR-37: Epic 9 — CONTRIBUTING.md with license header + conventional commit scopes
+FR-38: Epic 9 — SECURITY.md with vulnerability reporting policy
+FR-39: Epic 9 — CI workflow enhancements: license check, commitlint, .nvmrc
+FR-40: Epic 9 — JReleaser config + auto-changelog + package.json engines field
+FR-41: Epic 9 — Release workflow: preliminary/final/dry-run + npm provenance
+FR-42: Epic 9 — README tool groups documentation + out-of-scope section
 
 ## Epic List
 
@@ -229,6 +236,14 @@ Teams can query historical process instances, activity instances, task completio
 Users can deploy DMN decision tables and evaluate deployed decisions with input variables, receiving structured results or diagnostic errors. Completes the full Operaton capability surface alongside BPMN coverage.
 
 **FRs covered:** FR-34, FR-35
+
+---
+
+### Epic 9: OSS Project Standards & Release Automation
+
+operaton-mcp meets open-source project standards: all source files carry the Operaton Apache 2.0 license header, contributors have clear guidance in CONTRIBUTING.md, a SECURITY.md documents the vulnerability reporting policy, CI enforces license headers and conventional commit format, and the project can publish NPM releases and GitHub Releases via a JReleaser-backed release workflow with preliminary/final/dry-run modes. The README documents all tool groups and their operations along with an explicit out-of-scope section.
+
+**FRs covered:** FR-36, FR-37, FR-38, FR-39, FR-40, FR-41, FR-42
 
 ---
 
@@ -953,3 +968,165 @@ So that I can manage and test decision logic through AI alongside BPMN process m
 **Given** the integration tests for FR-34 and FR-35 run
 **When** `npm run test:integration` executes
 **Then** all tests pass; deployed DMN artifacts are cleaned up in `afterEach`
+
+---
+
+## Epic 9: OSS Project Standards & Release Automation
+
+operaton-mcp meets open-source project standards: all source files carry the Operaton Apache 2.0 license header, contributors have clear guidance in CONTRIBUTING.md, a SECURITY.md documents the vulnerability reporting policy, CI enforces license headers and conventional commit format, and the project can publish NPM releases and GitHub Releases via a JReleaser-backed release workflow with preliminary/final/dry-run modes. The README documents all tool groups and their operations along with an explicit out-of-scope section.
+
+### Story 9.1: License Headers on Source Files
+
+As a maintainer of operaton-mcp,
+I want all TypeScript source files in `src/`, `test/`, and `scripts/` to carry the Operaton Apache 2.0 license header,
+So that the project meets open-source licensing requirements and CI rejects PRs that omit required headers.
+
+**Acceptance Criteria:**
+
+**Given** `npm run check:license` is run on the repository
+**When** all `.ts` files in `src/`, `test/`, and `scripts/` carry the correct 14-line Operaton Apache 2.0 `//`-comment header
+**Then** the command exits zero with no files reported
+
+**Given** `npm run check:license` is run on the repository
+**When** any `.ts` file in `src/`, `test/`, or `scripts/` is missing the license header
+**Then** the command exits non-zero and prints the offending file paths
+
+**Given** the code generator emits a new `.ts` file
+**When** that file is committed
+**Then** the license header is prepended as the first lines of the file
+
+---
+
+### Story 9.2: CONTRIBUTING.md
+
+As a contributor to operaton-mcp,
+I want a CONTRIBUTING.md that explains the contributor workflow, conventional commit scopes, and license requirements,
+So that I can contribute confidently without needing to ask maintainers for guidance.
+
+**Acceptance Criteria:**
+
+**Given** `CONTRIBUTING.md` exists at the project root
+**When** it is reviewed
+**Then** it contains: (1) the Operaton license header verbatim inside an HTML comment at the top, (2) a Getting Started section, (3) a Development section with build/test commands, (4) a Commit Conventions section with the 12 defined scopes and ≥ 4 examples, a link to conventionalcommits.org, and (5) a PR guide
+
+**Given** the Commit Conventions section is reviewed
+**When** checking the scope list
+**Then** all 12 scopes are present: `process`, `task`, `job`, `incident`, `history`, `decision`, `user`, `deploy`, `config`, `ci`, `docs`, `test`
+
+---
+
+### Story 9.3: SECURITY.md
+
+As a security researcher or user of operaton-mcp,
+I want a SECURITY.md that tells me how to report vulnerabilities and what the response process is,
+So that I can disclose security issues responsibly without needing to find maintainer contact details.
+
+**Acceptance Criteria:**
+
+**Given** `SECURITY.md` exists at the project root
+**When** it is reviewed
+**Then** it contains sections for: Supported Versions, Reporting a Vulnerability (via GitHub Security Advisories), Response Process, Scope, and Legal — modelled on `operaton/operaton`
+
+**Given** the Reporting section is reviewed
+**When** checking the advisory link
+**Then** it points to `https://github.com/operaton/operaton-mcp/security/advisories/new`
+
+---
+
+### Story 9.4: CI Enhancements — License Check & Commitlint
+
+As a maintainer of operaton-mcp,
+I want the CI workflow to automatically enforce license headers and conventional commit format on every PR,
+So that contributors receive immediate feedback when their contribution is missing required headers or uses a non-conforming commit message.
+
+**Acceptance Criteria:**
+
+**Given** a PR is opened with a `.ts` file missing the license header
+**When** CI runs
+**Then** the `check-license` step fails and prints offending file paths; the workflow exits non-zero
+
+**Given** a PR is opened with a commit message not conforming to conventional commits (e.g., `"fixed stuff"`)
+**When** CI runs
+**Then** the `commitlint` step fails identifying the non-conforming commit
+
+**Given** `.nvmrc` exists at the project root
+**When** `.github/workflows/ci.yml` sets up Node.js
+**Then** it reads the version from `.nvmrc` via `node-version-file: .nvmrc` rather than a hardcoded version string
+
+**Given** `.commitlintrc.json` exists
+**When** commitlint runs
+**Then** it enforces conventional commit format with the 12 defined scopes, with scope optional (scope-empty disabled)
+
+---
+
+### Story 9.5: JReleaser Configuration
+
+As a maintainer of operaton-mcp,
+I want a JReleaser configuration that defines how the NPM package and GitHub Release are produced,
+So that the release process is declarative, repeatable, and generates changelogs automatically from conventional commits.
+
+**Acceptance Criteria:**
+
+**Given** `jreleaser.yml` exists at the project root
+**When** `jreleaser full-release --dry-run` is executed
+**Then** JReleaser reports it would publish an NPM distribution and create a GitHub Release with a conventional-commits changelog — with no external mutations
+
+**Given** `jreleaser.yml` is reviewed
+**When** checking credential references
+**Then** all credentials are referenced via environment variable placeholders, never hardcoded
+
+**Given** `package.json` is reviewed
+**When** checking the `engines` field
+**Then** it declares `"node": ">=22.0.0"` consistent with `.nvmrc`
+
+---
+
+### Story 9.6: Release Workflow
+
+As a maintainer of operaton-mcp,
+I want a GitHub Actions release workflow that supports preliminary (SNAPSHOT) and final releases with a dry-run mode,
+So that I can publish pre-releases for community testing and cut stable releases with auto-generated changelogs — safely and repeatably.
+
+**Acceptance Criteria:**
+
+**Given** `.github/workflows/release.yml` is reviewed
+**When** checking the workflow inputs
+**Then** it declares `release_type` (choice: `preliminary` | `final`, required) and `dry_run` (boolean, default `false`)
+
+**Given** the workflow runs with `release_type=preliminary` and `dry_run=false`
+**When** it completes
+**Then** the NPM package is published with version `x.y.z-SNAPSHOT` to the `next` dist-tag and a GitHub pre-release is created
+
+**Given** the workflow runs with `release_type=final` and `dry_run=false`
+**When** it completes
+**Then** a semver git tag is created, NPM package is published to `latest` with `--provenance`, a GitHub Release is created, and a version bump commit (`x.(y+1).0-SNAPSHOT`) is pushed to `main`
+
+**Given** the workflow runs with `dry_run=true`
+**When** it completes
+**Then** no NPM publish, no GitHub Release, no git tags, and no version bump commit occur; workflow log shows what would have happened
+
+**Given** the release workflow is reviewed
+**When** checking job permissions
+**Then** it declares `contents: write` and `id-token: write`
+
+---
+
+### Story 9.7: README Tool Groups & Out-of-Scope Section
+
+As a user evaluating or setting up operaton-mcp,
+I want the README to show me exactly which tool groups are available and what is explicitly not supported,
+So that I can quickly determine whether operaton-mcp meets my needs.
+
+**Acceptance Criteria:**
+
+**Given** `README.md` is reviewed
+**When** checking the Available Tool Groups section
+**Then** it lists all 9 MCP tool groups (`processDefinition`, `deployment`, `processInstance`, `task`, `job`, `incident`, `user`, `history`, `decision`), each with a one-line description and bullet list of key operations
+
+**Given** `README.md` is reviewed
+**When** checking for an out-of-scope section
+**Then** it contains an explicit "Out of Scope" section listing at minimum: autonomous monitoring, BPMN generation, multi-engine support, UI or dashboard, and prompt templates — with references to Growth/Vision phases
+
+**Given** `README.md` is reviewed
+**When** checking the original sections from Story 1.6
+**Then** all 5 original sections (Install & Run, Environment Variables, MCP Client Configuration, Available Tool Groups, Development) are still present and unchanged in content

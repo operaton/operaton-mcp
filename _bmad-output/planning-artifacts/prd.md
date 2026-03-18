@@ -18,10 +18,12 @@ classification:
   complexity: medium
   projectContext: greenfield
 date: '2026-03-16'
-lastEdited: '2026-03-17'
+lastEdited: '2026-03-18'
 editHistory:
   - date: '2026-03-17'
     changes: 'Added FR section (individual-operation level), NFR section, Setup Requirements section; fixed Success Criteria measurability; added Out of Scope; labeled Journey 3 as Growth-phase'
+  - date: '2026-03-18'
+    changes: 'Added FR-36–FR-42 (Project Infrastructure & Publishing): license headers with Operaton copyright, CONTRIBUTING.md with license header + conventional commit scopes, SECURITY.md, CI workflow with commitlint + .nvmrc, JReleaser config, release workflow with preliminary/final/dry-run modes + npm provenance, README tool groups + out-of-scope section. Added NFR-07 (release workflow dry-run fidelity). Added Journey 5 (Lena — OSS Contributor/Maintainer) with two arcs revealing FR-36–FR-42. Updated Journey Requirements Summary table. Tightened FR-40 wording. Restructured FR-41 as compound FR with (a)/(b)/(c) sub-bullets. Post-validation fixes: added infra line to MVP scope; updated stale FR counts in NFR-01/NFR-03; removed actions/setup-node leakage from FR-39.'
 ---
 
 # Product Requirements Document - operaton-mcp
@@ -87,6 +89,7 @@ Full Operaton REST API surface as MCP tools, organized by domain:
 - Users & groups (create, update, delete, query, membership)
 - Historic data (process instances, activity instances, task history, variable history)
 - Decisions & DMN (deploy, evaluate)
+- Project infrastructure & publishing tooling (license headers, CONTRIBUTING.md, SECURITY.md, CI workflow, release automation, README)
 
 ### Out of Scope (MVP)
 
@@ -176,6 +179,36 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 
 ---
 
+### Journey 5: Lena — The OSS Contributor / Maintainer
+
+**Persona:** Lena is a developer who contributes to open-source projects in her spare time. She discovers operaton-mcp, wants to submit a bug fix, and — after it's merged — helps cut a release as a co-maintainer.
+
+**Arc 1 — Contributing:**
+
+**Opening Scene:** Lena forks the repository, makes her change, and opens a pull request. CI immediately fails: her new source file is missing the required license header.
+
+**Rising Action:** She checks `CONTRIBUTING.md`, finds the exact header format and a list of conventional commit scopes. She adds the header, amends her commit message to `fix(incident): handle null incident message on resolve`, and pushes again. CI goes green — build, tests, lint, license-check, and commitlint all pass.
+
+**Resolution:** Lena's PR is merged with zero back-and-forth on process. She knew exactly what was expected because the project told her upfront. She files a second PR the same week.
+
+*Reveals requirements for: license headers on all source files (FR-36), CONTRIBUTING.md with conventional commit scopes and examples (FR-37), CI workflow enforcing headers and commit format (FR-39).*
+
+---
+
+**Arc 2 — Releasing:**
+
+**Opening Scene:** After her PRs are merged, a maintainer asks Lena to help cut the next release. She has npm and GitHub credentials configured; she's never used JReleaser before.
+
+**Rising Action:** Lena runs the release workflow with `release_type=preliminary` and `dry_run=true` first — the log shows exactly what would be published and what the changelog would contain, without touching the registry. Satisfied, she runs it live: the `1.1.0-SNAPSHOT` package appears on npm under the `next` dist-tag and a GitHub pre-release is created with the auto-generated changelog.
+
+**Climax:** After community testing, she triggers `release_type=final`. JReleaser creates the `1.1.0` git tag, publishes the stable npm package with provenance attestation, generates the GitHub Release, and commits the next-minor version bump back to `main`. She checks the README to confirm the tool groups and out-of-scope section accurately reflect what shipped.
+
+**Resolution:** The release takes 10 minutes. The changelog writes itself from the conventional commits. The community knows exactly what changed and what's still out of scope.
+
+*Reveals requirements for: SECURITY.md (FR-38), JReleaser config with auto-changelog (FR-40), release workflow with preliminary/final/dry-run modes and npm provenance (FR-41), README tool groups and out-of-scope section (FR-42).*
+
+---
+
 ### Journey Requirements Summary (MVP)
 
 *Note: Journey 3 (Sofia) requirements map to Growth-phase features and are excluded from the MVP capability table below.*
@@ -192,6 +225,13 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 | Historic data query | Marcus J2, Alex J4 |
 | Connection configuration and error clarity | Alex J4 |
 | Safe mutating operations with confirmation | Marcus J2 |
+| License headers + CI enforcement | Lena J5 |
+| CONTRIBUTING.md + conventional commit scopes | Lena J5 |
+| SECURITY.md | Lena J5 |
+| CI workflow (build, test, lint, license, commitlint) | Lena J5 |
+| JReleaser config + auto-changelog | Lena J5 |
+| Release workflow (preliminary/final/dry-run) + npm provenance | Lena J5 |
+| README tool groups + out-of-scope section | Lena J5 |
 
 ## Setup Requirements
 
@@ -333,11 +373,30 @@ All FRs below apply to MVP scope. Write/mutating operations (marked **W**) must 
 
 **FR-35 (W/R):** Users can evaluate a deployed decision table by decision definition key, supplying input variables; the server returns the evaluation result or a structured error if evaluation fails.
 
+### Project Infrastructure & Publishing
+
+**FR-36:** All source files in `src/` and `test/` carry the Operaton Apache 2.0 license header with the Operaton copyright notice (`Copyright Operaton contributors, Licensed under the Apache License, Version 2.0`), adapted for TypeScript/JavaScript comment syntax (`//`); CI rejects any PR containing files missing or malformed headers.
+
+**FR-37:** `CONTRIBUTING.md` includes the Operaton license header verbatim at the top of the document, followed by: contributor workflow, conventional commit format with all defined scopes and concrete examples for `feat`, `fix`, `chore`, and `docs` types, and a link to the conventionalcommits.org specification.
+
+**FR-38:** `SECURITY.md` documents supported versions, vulnerability reporting via GitHub Security Advisories (including required submission details), response process, and policy scope — modelled on the operaton/operaton `SECURITY.md` reference, under Apache 2.0 framing.
+
+**FR-39:** `ci.yml` GitHub Actions workflow executes build, test, lint, license-header check, and commitlint on every push and pull request; Node.js version is read from `.nvmrc`; all checks must pass before a PR is mergeable.
+
+**FR-40:** Users can publish an NPM package release and create a corresponding GitHub Release with auto-generated changelog by running the JReleaser-backed release workflow; the workflow reads conventional commits since the last tag to produce the changelog, and `package.json` `engines` declares the minimum supported Node.js version consistent with `.nvmrc`.
+
+**FR-41:** Users can trigger the `release.yml` GitHub Actions workflow with two inputs — `release_type` (`preliminary` | `final`) and `dry_run` (boolean) — with the following behaviors:
+- **(a) Preliminary:** publishes `x.y.z-SNAPSHOT` to the NPM `next` dist-tag and creates or overwrites a GitHub pre-release; changelog is auto-generated from conventional commits since the last tag.
+- **(b) Final:** creates a semver git tag, publishes the stable NPM release with provenance attestation (`--provenance`), generates a GitHub Release with changelog, then commits a next-minor version bump (`x.(y+1).0-SNAPSHOT`) back to `main`.
+- **(c) Dry-run:** passes `--dry-run` to JReleaser; produces identical log output to a live run without publishing to NPM, creating GitHub releases, pushing tags, or committing version bumps.
+
+**FR-42:** `README.md` documents all MCP tool groups with a per-group summary of available operations, and includes an explicit out-of-scope section listing Growth and Vision features not available in the current release.
+
 ## Non-Functional Requirements
 
 **NFR-01 — Write Operation Reliability:**
 All mutating tool calls (deploy, start, suspend, resume, delete, complete, claim, unclaim, retry, resolve, create, update) return either explicit success confirmation or a structured error message containing the error type, cause, and recommended corrective action where applicable. Zero silent failures permitted.
-*Measurement: Integration test suite covers error paths for all 35 FRs; verified by automated test run against a live Operaton instance.*
+*Measurement: Integration test suite covers error paths for all FRs; verified by automated test run against a live Operaton instance.*
 
 **NFR-02 — Read Accuracy:**
 Read operations return the current state of the Operaton engine at time of call. Reads during normal engine operation must not return stale or incorrect data; eventual consistency windows during high-load engine operations are acceptable edge cases, not normal behaviour.
@@ -345,7 +404,7 @@ Read operations return the current state of the Operaton engine at time of call.
 
 **NFR-03 — MCP Protocol Compliance:**
 The server is compatible with at least Claude Desktop and GitHub Copilot Chat MCP client implementations at launch. Compatibility is verified by functional integration tests against both clients.
-*Measurement: Functional test suite executed against both client implementations; all 35 FRs exercisable from each client.*
+*Measurement: Functional test suite executed against both client implementations; all FRs exercisable from each client.*
 
 **NFR-04 — Stateless Operation:**
 No user-specific session state is stored between tool calls. Each tool call is self-contained, requiring only the configured Operaton connection parameters. The server holds no in-memory user context between calls.
@@ -358,3 +417,7 @@ All error responses include: error type, the specific cause (e.g., HTTP status a
 **NFR-06 — Configurability:**
 All Operaton connection parameters (base URL, credentials, engine name) are configurable via environment variables. No endpoints, credentials, or engine names are hardcoded. A misconfigured or unreachable connection produces an error that identifies the parameter causing the failure.
 *Measurement: Configuration test matrix covers valid config, wrong URL, wrong credentials, and unreachable host; each produces the correct error response.*
+
+**NFR-07 — Release Workflow Dry-Run Fidelity:**
+Release workflow dry-run mode (`dry_run=true`) produces identical log output and validation results to a live run without mutating any external state (NPM registry, GitHub releases, git tags, repository commits). Dry-run must be executable by any maintainer without credentials for external systems.
+*Measurement: Dry-run executed against every release workflow change as part of PR review; confirmed no external mutations by verifying NPM registry and GitHub release state are unchanged after run.*
