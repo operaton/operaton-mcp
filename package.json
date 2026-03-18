@@ -1,5 +1,5 @@
 {
-  "name": "operaton-mcp",
+  "name": "@operaton/operaton-mcp",
   "version": "1.0.0",
   "description": "MCP server exposing the full Operaton BPMN/DMN REST API to AI assistants",
   "type": "module",
