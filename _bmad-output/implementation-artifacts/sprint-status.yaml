@@ -99,12 +99,12 @@ development_status:
   epic-8-retrospective: optional
 
   # Epic 9: OSS Project Standards & Release Automation
-  epic-9: in-progress
-  9-1-license-headers-on-source-files: review
-  9-2-contributing-md: review
-  9-3-security-md: review
-  9-4-ci-enhancements-license-check-and-commitlint: review
-  9-5-jreleaser-configuration: review
-  9-6-release-workflow: review
-  9-7-readme-tool-groups-and-out-of-scope: review
+  epic-9: done
+  9-1-license-headers-on-source-files: done
+  9-2-contributing-md: done
+  9-3-security-md: done
+  9-4-ci-enhancements-license-check-and-commitlint: done
+  9-5-jreleaser-configuration: done
+  9-6-release-workflow: done
+  9-7-readme-tool-groups-and-out-of-scope: done
   epic-9-retrospective: optional
