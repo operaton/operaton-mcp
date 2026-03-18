@@ -24,12 +24,13 @@ export interface OperatonClient {
   delete(path: string): Promise<unknown>;
 }
 
-export function createOperatonClient(config: Config): OperatonClient {
-  const authHeader =
-    "Basic " +
-    Buffer.from(`${config.username}:${config.password}`).toString("base64");
+function createBasicAuthHeader(username: string, password: string): string {
+  return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
+}
 
-  const baseUrl = config.baseUrl.replace(/\/$/, "");
+export function createOperatonClient(config: Config): OperatonClient {
+  const authHeader = createBasicAuthHeader(config.username, config.password);
+  const baseUrl = config.baseUrl.replace(/\/+$/, "");
 
   function resolvePath(path: string): string {
     return path.replace("{engineName}", config.engineName);
@@ -65,7 +66,7 @@ export function createOperatonClient(config: Config): OperatonClient {
       return normalize(errorBody) as McpToolError;
     }
     const text = await response.text();
-    return text ? (JSON.parse(text) as unknown) : null;
+    return text ? (JSON.parse(text) as unknown) : {};
   }
 
   async function requestMultipart(path: string, fields: Record<string, string>): Promise<unknown> {
@@ -73,8 +74,7 @@ export function createOperatonClient(config: Config): OperatonClient {
     const url = `${baseUrl}${resolvedPath}`;
     const form = new FormData();
     for (const [key, value] of Object.entries(fields)) {
-      const blobContent = new Blob([value], { type: "application/octet-stream" });
-      form.append(key, blobContent, key);
+      form.append(key, value);
     }
     const response = await fetch(url, {
       method: "POST",
@@ -92,7 +92,7 @@ export function createOperatonClient(config: Config): OperatonClient {
       return normalize(errorBody) as McpToolError;
     }
     const text = await response.text();
-    return text ? (JSON.parse(text) as unknown) : null;
+    return text ? (JSON.parse(text) as unknown) : {};
   }
 
   return {
@@ -109,10 +109,8 @@ export async function checkConnectivity(config: Config): Promise<void> {
     return;
   }
 
-  const authHeader =
-    "Basic " +
-    Buffer.from(`${config.username}:${config.password}`).toString("base64");
-  const url = config.baseUrl.replace(/\/$/, "");
+  const authHeader = createBasicAuthHeader(config.username, config.password);
+  const url = config.baseUrl.replace(/\/+$/, "");
 
   try {
     const response = await fetch(`${url}/engine`, {

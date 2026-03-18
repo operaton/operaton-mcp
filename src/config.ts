@@ -21,31 +21,25 @@ export interface Config {
 }
 
 export function loadConfig(): Config {
-  const required: Array<keyof Pick<Config, "baseUrl" | "username" | "password">> = [];
   const baseUrl = process.env["OPERATON_BASE_URL"];
   const username = process.env["OPERATON_USERNAME"];
   const password = process.env["OPERATON_PASSWORD"];
 
-  if (!baseUrl) {
-    console.error("[operaton-mcp] Missing required env var: OPERATON_BASE_URL");
-    process.exit(1);
-  }
-  if (!username) {
-    console.error("[operaton-mcp] Missing required env var: OPERATON_USERNAME");
-    process.exit(1);
-  }
-  if (!password) {
-    console.error("[operaton-mcp] Missing required env var: OPERATON_PASSWORD");
-    process.exit(1);
-  }
+  const missing: string[] = [];
+  if (!baseUrl) missing.push("OPERATON_BASE_URL");
+  if (!username) missing.push("OPERATON_USERNAME");
+  if (!password) missing.push("OPERATON_PASSWORD");
 
-  void required;
+  if (missing.length > 0) {
+    console.error(`[operaton-mcp] Missing required environment variables: ${missing.join(", ")}`);
+    process.exit(1);
+  }
 
   return {
-    baseUrl,
-    username,
-    password,
+    baseUrl: baseUrl!,
+    username: username!,
+    password: password!,
     engineName: process.env["OPERATON_ENGINE"] ?? "default",
-    skipHealthCheck: process.env["OPERATON_SKIP_HEALTH_CHECK"] === "true",
+    skipHealthCheck: process.env["OPERATON_SKIP_HEALTH_CHECK"]?.toLowerCase() === "true",
   };
 }

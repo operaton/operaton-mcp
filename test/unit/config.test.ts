@@ -79,7 +79,7 @@ describe("loadConfig", () => {
 
     expect(() => loadConfig()).toThrow("process.exit called");
     expect(errorSpy).toHaveBeenCalledWith(
-      "[operaton-mcp] Missing required env var: OPERATON_BASE_URL",
+      "[operaton-mcp] Missing required environment variables: OPERATON_BASE_URL",
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
@@ -91,7 +91,7 @@ describe("loadConfig", () => {
 
     expect(() => loadConfig()).toThrow("process.exit called");
     expect(errorSpy).toHaveBeenCalledWith(
-      "[operaton-mcp] Missing required env var: OPERATON_USERNAME",
+      "[operaton-mcp] Missing required environment variables: OPERATON_USERNAME",
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
@@ -103,7 +103,19 @@ describe("loadConfig", () => {
 
     expect(() => loadConfig()).toThrow("process.exit called");
     expect(errorSpy).toHaveBeenCalledWith(
-      "[operaton-mcp] Missing required env var: OPERATON_PASSWORD",
+      "[operaton-mcp] Missing required environment variables: OPERATON_PASSWORD",
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it("reports all missing environment variables at once", () => {
+    delete process.env["OPERATON_BASE_URL"];
+    delete process.env["OPERATON_USERNAME"];
+    delete process.env["OPERATON_PASSWORD"];
+
+    expect(() => loadConfig()).toThrow("process.exit called");
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[operaton-mcp] Missing required environment variables: OPERATON_BASE_URL, OPERATON_USERNAME, OPERATON_PASSWORD",
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });

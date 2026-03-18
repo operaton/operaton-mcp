@@ -43,13 +43,13 @@ story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
   # Epic 1: Working MCP Server — Install, Configure & Connect
-  epic-1: in-progress
-  1-1-project-scaffold-and-typescript-configuration: review
-  1-2-configuration-module-and-startup-validation: review
-  1-3-http-client-factory-and-error-normalization: review
-  1-4-code-generation-pipeline-with-fixture-manifest: review
-  1-5-mcp-server-wiring-and-smoke-test: review
-  1-6-ci-workflows-and-npm-publishing-configuration: review
+  epic-1: done
+  1-1-project-scaffold-and-typescript-configuration: done
+  1-2-configuration-module-and-startup-validation: done
+  1-3-http-client-factory-and-error-normalization: done
+  1-4-code-generation-pipeline-with-fixture-manifest: done
+  1-5-mcp-server-wiring-and-smoke-test: done
+  1-6-ci-workflows-and-npm-publishing-configuration: done
   epic-1-retrospective: optional
 
   # Epic 2: Process Definition & Deployment Management

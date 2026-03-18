@@ -86,7 +86,7 @@ export function normalize(errorBody: unknown): McpToolError {
     message = rawBody;
   }
 
-  const entry = ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"]!;
+  const entry = ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"];
   const text =
     rawBody && errorType === "__unknown__"
       ? `[${errorType}] ${rawBody} — Suggested action: ${entry.hint}`
