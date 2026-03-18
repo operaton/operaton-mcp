@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "MCP server for the Operaton BPM REST API — exposes 300+ Operaton REST API operations as MCP tools for AI agents",
   "type": "module",
+  "access": "public",
   "main": "dist/index.js",
   "license": "Apache-2.0",
   "repository": {
