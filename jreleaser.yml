@@ -21,5 +21,5 @@ distributions:
     artifacts:
       - path: '{{projectName}}-{{projectVersion}}.tgz'
     npm:
-      packageName: operaton-mcp
+      packageName: @operaton/operaton-mcp
       access: PUBLIC
