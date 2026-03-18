@@ -117,10 +117,22 @@ chore(ci): add commitlint to PR workflow
 docs(deploy): document deployment ID return format
 ```
 
+## Reporting Issues
+
+When opening an issue, use the issue template that best fits your need:
+
+- **Bug Report** — structured form that guides you through steps to reproduce, expected vs actual behavior, and version info
+- **Feature Request** — describes the problem you're trying to solve and your proposed solution
+
+Both templates are pre-filled with the right labels and fields to help maintainers triage efficiently.
+
 ## Submitting a PR
 
-- Keep PRs focused — one logical change per PR.
-- Ensure `npm test` passes before opening the PR.
-- Run `npm run check:license` to verify all new files carry the license header.
-- Write a clear PR description explaining what changed and why.
-- Reference any related issues in the PR body.
+When you open a pull request, the PR description editor is pre-filled with our PR template. Please complete all sections:
+
+- **Summary** — what changed and why; link to the related issue
+- **Type of Change** — check the appropriate box(es)
+- **Testing** — describe what was tested and how
+- **Checklist** — verify all items before requesting review
+
+Keep PRs focused — one logical change per PR. Ensure `npm test` passes before opening the PR. Run `npm run check:license` to verify all new files carry the license header.

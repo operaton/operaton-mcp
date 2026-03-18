@@ -1,35 +1,27 @@
 # operaton-mcp
 
-MCP server for the [Operaton](https://operaton.org) BPM REST API — exposes 300+ Operaton REST operations as MCP tools for AI agents.
+> MCP server exposing the full Operaton BPMN/DMN REST API to AI assistants
 
-## Install & Run
+[![npm version](https://img.shields.io/npm/v/operaton-mcp)](https://www.npmjs.com/package/operaton-mcp)
+[![CI](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Node.js](https://img.shields.io/node/v/operaton-mcp)](https://nodejs.org)
 
-```bash
-npx operaton-mcp
-```
+[Operaton](https://operaton.org) is an open-source BPMN and DMN workflow engine. **operaton-mcp** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes 300+ Operaton REST API operations as MCP tools, enabling AI assistants like Claude to interact directly with your workflow engine — deploying processes, managing instances, handling tasks, and querying history.
 
-Or install globally:
+## Features
 
-```bash
-npm install -g operaton-mcp
-operaton-mcp
-```
+- **Full REST API coverage** — 300+ operations across process definitions, instances, tasks, jobs, incidents, users, history, and decisions
+- **Multi-engine support** — connect to multiple Operaton instances from a single server
+- **Basic Auth & OIDC** — supports both HTTP Basic authentication and OAuth2 client credentials (OIDC)
+- **Zero-setup with npx** — run without installation via `npx operaton-mcp`
+- **Type-safe** — written in TypeScript with strict type checking
 
-## Environment Variables
+## Quick Start
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `OPERATON_BASE_URL` | Yes | — | Operaton REST API base URL (e.g. `http://localhost:8080/engine-rest`) |
-| `OPERATON_USERNAME` | Yes | — | Operaton user for Basic Auth |
-| `OPERATON_PASSWORD` | Yes | — | Operaton password for Basic Auth |
-| `OPERATON_ENGINE` | No | `default` | Operaton engine name used in API path templates |
-| `OPERATON_SKIP_HEALTH_CHECK` | No | `false` | Skip startup connectivity check — set `true` for dev/test environments |
+> **Prerequisites:** Node.js ≥ 22, a running Operaton instance.
 
-## MCP Client Configuration
-
-### Claude Desktop
-
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
 
 ```json
 {
@@ -47,47 +39,49 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-## Example Prompts
+Restart Claude Desktop — you're ready to use natural-language commands against your Operaton instance.
 
-Once connected, you can ask your AI assistant natural-language questions about your Operaton instance:
+## Authentication
 
-**Deployments & Definitions**
-> "Deploy this BPMN file to Operaton and name it `loan-approval-v3`."
-> "List all deployed versions of the `invoice-approval` process."
-> "Show me the BPMN XML for the latest version of the `onboarding` process."
-> "Delete the old `loan-approval` definition — it has no active instances."
+### Basic Auth
 
-**Process Instances**
-> "Start a new `invoice-approval` process with business key `INV-2024-001` and set the `amount` variable to 15000."
-> "List all active instances of the `loan-approval` process."
-> "Suspend the instance `abc-123` while we investigate the failure."
-> "What variables are currently set on process instance `abc-123`?"
+| Variable | Required | Description |
+|---|---|---|
+| `OPERATON_BASE_URL` | Yes | Operaton REST API URL, e.g. `http://localhost:8080/engine-rest` |
+| `OPERATON_USERNAME` | Yes | Basic Auth username |
+| `OPERATON_PASSWORD` | Yes | Basic Auth password |
+| `OPERATON_ENGINE` | No | Operaton engine name (default: `default`) |
+| `OPERATON_SKIP_HEALTH_CHECK` | No | Set `true` to skip startup connectivity check |
 
-**User Tasks**
-> "Show me all unassigned tasks for the `approvers` group."
-> "Claim task `task-456` for user `john.doe`."
-> "Complete the approval task for invoice INV-2024-001 and set `approved = true`."
-> "How many overdue tasks are there across all processes?"
+### OIDC / Client Credentials
 
-**Operations & Incidents**
-> "Are there any failed jobs with no retries left?"
-> "Reset the retry count to 3 for job `job-789` and trigger immediate execution."
-> "List all open incidents for the `payment-processing` process."
+| Variable | Required | Description |
+|---|---|---|
+| `OPERATON_BASE_URL` | Yes | Operaton REST API URL |
+| `OPERATON_CLIENT_ID` | Yes | OAuth2 client ID |
+| `OPERATON_CLIENT_SECRET` | Yes | OAuth2 client secret |
+| `OPERATON_TOKEN_URL` | Yes | Token endpoint URL |
 
-**History & Audit**
-> "Show me all completed `invoice-approval` instances from last week."
-> "What activities were executed in process instance `abc-123`, and how long did each take?"
-> "Who completed the approval task for business key `INV-2024-001`, and when?"
+```json
+{
+  "mcpServers": {
+    "operaton": {
+      "command": "npx",
+      "args": ["-y", "operaton-mcp"],
+      "env": {
+        "OPERATON_BASE_URL": "https://operaton.example.com/engine-rest",
+        "OPERATON_CLIENT_ID": "mcp-client",
+        "OPERATON_CLIENT_SECRET": "your-secret",
+        "OPERATON_TOKEN_URL": "https://keycloak.example.com/realms/myapp/protocol/openid-connect/token"
+      }
+    }
+  }
+}
+```
 
-**Decisions**
-> "Deploy this DMN decision table for loan eligibility checking."
-> "Evaluate the `credit-check` decision with `income = 50000` and `creditScore = 720`."
+> For multi-engine deployments, see the [Configuration Guide](docs/configuration.md).
 
-**Administration**
-> "Create a new user `jane.smith` with email `jane@example.com`."
-> "Add `john.doe` to the `senior-approvers` group."
-
-## Available Tool Groups
+## Available Tools
 
 ### `processDefinition`
 
@@ -211,17 +205,35 @@ Deploy and evaluate DMN decision tables.
 - **evaluate** — evaluate a decision table with input variables
 - **list requirements** — list decision requirement diagrams (DRDs)
 
-## Out of Scope
+## Example Prompts
 
-The following capabilities are not available in the current release:
+**Deployments & Definitions**
+> "Deploy this BPMN file to Operaton and name it `loan-approval-v3`."
+> "List all deployed versions of the `invoice-approval` process."
+> "Show me the BPMN XML for the latest version of the `onboarding` process."
 
-- **Autonomous monitoring** — AI-initiated process health watching and alerting (planned: Vision phase)
-- **BPMN generation** — natural language → BPMN authoring and AI-assisted process design (planned: Growth phase)
-- **Multi-engine support** — connecting to multiple Operaton instances simultaneously (planned: Growth phase)
-- **Prompt templates** — guided scenario workflows for common operational tasks (planned: Growth phase)
-- **UI or dashboard** — no web interface; operaton-mcp is a pure MCP server
+**Process Instances**
+> "Start a new `invoice-approval` process with business key `INV-2024-001` and set the `amount` variable to 15000."
+> "List all active instances of the `loan-approval` process."
+> "What variables are currently set on process instance `abc-123`?"
 
-Growth and Vision phase features are tracked in the project roadmap.
+**User Tasks**
+> "Show me all unassigned tasks for the `approvers` group."
+> "Claim task `task-456` for user `john.doe`."
+> "Complete the approval task for invoice INV-2024-001 and set `approved = true`."
+
+**Operations & Incidents**
+> "Are there any failed jobs with no retries left?"
+> "Reset the retry count to 3 for job `job-789` and trigger immediate execution."
+> "List all open incidents for the `payment-processing` process."
+
+**History & Audit**
+> "Show me all completed `invoice-approval` instances from last week."
+> "Who completed the approval task for business key `INV-2024-001`, and when?"
+
+**Decisions**
+> "Deploy this DMN decision table for loan eligibility checking."
+> "Evaluate the `credit-check` decision with `income = 50000` and `creditScore = 720`."
 
 ## Development
 
@@ -253,9 +265,11 @@ npm run test:integration
 ```
 src/
   index.ts          — MCP server entry point
-  config.ts         — Environment variable loading and validation
+  config.ts         — Configuration loading (env vars + config file)
+  auth/
+    token-manager.ts — OIDC client credentials token manager
   http/
-    client.ts       — Operaton HTTP client with Basic Auth
+    client.ts       — Operaton HTTP client (Basic + OIDC auth)
     errors.ts       — Error normalization with BPM-domain hints
   generated/        — Build artifact (gitignored); produced by npm run generate
   tools/            — Curated tool wrappers (hand-written)
@@ -266,4 +280,23 @@ resources/
   operaton-rest-api.json     — Authoritative OpenAPI 3.0.2 spec (never modify)
 scripts/
   generate.ts       — Code generation pipeline
+docs/
+  configuration.md  — Full configuration reference
 ```
+
+## Out of Scope
+
+The following capabilities are not available in the current release:
+
+- **Autonomous monitoring** — AI-initiated process health watching and alerting (planned: Vision phase)
+- **BPMN generation** — natural language → BPMN authoring and AI-assisted process design (planned: Growth phase)
+- **Prompt templates** — guided scenario workflows for common operational tasks (planned: Growth phase)
+- **UI or dashboard** — no web interface; operaton-mcp is a pure MCP server
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute, commit conventions, and the PR process.
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE) for details.

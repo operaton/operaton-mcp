@@ -1,0 +1,68 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much detail as possible to help us reproduce and fix it.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Configure MCP server with...
+        2. Send tool call...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include any error messages.
+    validations:
+      required: true
+  - type: input
+    id: mcp-version
+    attributes:
+      label: operaton-mcp version
+      placeholder: "e.g. 1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: operaton-version
+    attributes:
+      label: Operaton version
+      placeholder: "e.g. 7.22"
+    validations:
+      required: false
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      placeholder: "e.g. 22.x"
+    validations:
+      required: false
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: Paste your MCP client config (remove any credentials before pasting).
+      render: json
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context / logs
+      description: Any other context, logs, or screenshots that might help.
+    validations:
+      required: false

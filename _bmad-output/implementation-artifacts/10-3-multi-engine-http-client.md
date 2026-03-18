@@ -1,6 +1,6 @@
 # Story 10.3: Multi-Engine HTTP Client & Connectivity
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,32 +26,32 @@ so that all tool calls are authenticated correctly without any per-tool changes.
 
 ## Tasks / Subtasks
 
-- [ ] Update `src/http/client.ts` to use `ResolvedConfig` and `EngineConfig` (AC: 1, 2, 3, 7)
-  - [ ] Update `createOperatonClient(config: ResolvedConfig, engineName?: string): OperatonClient`
-    - [ ] Resolve engine: use `engineName` if provided, else `config.defaultEngine`
-    - [ ] Build auth header based on `engineConfig.authentication.type`
-    - [ ] For `'basic'`: `Authorization: Basic ${Buffer.from(`${username}:${password}`).toString('base64')}` — use `Buffer.from`, NOT `btoa` (browser-only API)
-    - [ ] For `'oidc'`: await `getTokenManager(engineName, oidcConfig).getToken()` then `Authorization: Bearer {token}`
-    - [ ] Use `engineConfig.url` as the base URL
-  - [ ] Update `checkConnectivity(config: ResolvedConfig): Promise<void>`
-    - [ ] Check default engine only
-    - [ ] Resolve auth header using same logic as request handler
-    - [ ] On failure log `[operaton-mcp] Warning: Cannot reach Operaton at {url}. ...` (preserve existing format)
-- [ ] Handle OIDC token errors in request path (AC: 4)
-  - [ ] Catch token fetch errors and rethrow as structured MCP errors
-  - [ ] Error format: `{ type: 'auth_error', cause: 'OIDC authentication failed: {reason}' }`
-- [ ] Update `src/index.ts` — no logic change, but verify types compile after config interface change
-- [ ] Update all generated tool files that call `createOperatonClient` to pass `ResolvedConfig` (AC: 7)
-  - [ ] Search for all `createOperatonClient(config)` call sites in `src/tools/`
-  - [ ] Verify no tool file reads auth fields directly — all must go through client factory
-  - [ ] **Validate with `tsc --noEmit` before manually editing any tool files** — if `ResolvedConfig` is a clean drop-in for `Config`, the compiler will confirm zero changes needed in generated tools
-- [ ] Write unit tests (AC: 1–7)
-  - [ ] Test: basic auth engine → correct `Authorization: Basic` header on request
-  - [ ] Test: OIDC auth engine → calls TokenManager.getToken(), correct `Authorization: Bearer` header
-  - [ ] Test: no engineName → uses defaultEngine
-  - [ ] Test: OIDC token failure → propagates as structured MCP error
-  - [ ] Test: checkConnectivity with OIDC engine → fetches token for health check
-  - [ ] Test: checkConnectivity skipped when skipHealthCheck=true (existing test preserved)
+- [x] Update `src/http/client.ts` to use `ResolvedConfig` and `EngineConfig` (AC: 1, 2, 3, 7)
+  - [x] Update `createOperatonClient(config: ResolvedConfig, engineName?: string): OperatonClient`
+    - [x] Resolve engine: use `engineName` if provided, else `config.defaultEngine`
+    - [x] Build auth header based on `engineConfig.authentication.type`
+    - [x] For `'basic'`: `Authorization: Basic ${Buffer.from(`${username}:${password}`).toString('base64')}` — use `Buffer.from`, NOT `btoa` (browser-only API)
+    - [x] For `'oidc'`: await `getTokenManager(engineName, oidcConfig).getToken()` then `Authorization: Bearer {token}`
+    - [x] Use `engineConfig.url` as the base URL
+  - [x] Update `checkConnectivity(config: ResolvedConfig): Promise<void>`
+    - [x] Check default engine only
+    - [x] Resolve auth header using same logic as request handler
+    - [x] On failure log `[operaton-mcp] Warning: Cannot reach Operaton at {url}. ...` (preserve existing format)
+- [x] Handle OIDC token errors in request path (AC: 4)
+  - [x] Catch token fetch errors and rethrow as structured MCP errors
+  - [x] Error format: `{ type: 'auth_error', cause: 'OIDC authentication failed: {reason}' }`
+- [x] Update `src/index.ts` — no logic change, but verify types compile after config interface change
+- [x] Update all generated tool files that call `createOperatonClient` to pass `ResolvedConfig` (AC: 7)
+  - [x] Search for all `createOperatonClient(config)` call sites in `src/tools/`
+  - [x] Verify no tool file reads auth fields directly — all must go through client factory
+  - [x] **Validate with `tsc --noEmit` before manually editing any tool files** — if `ResolvedConfig` is a clean drop-in for `Config`, the compiler will confirm zero changes needed in generated tools
+- [x] Write unit tests (AC: 1–7)
+  - [x] Test: basic auth engine → correct `Authorization: Basic` header on request
+  - [x] Test: OIDC auth engine → calls TokenManager.getToken(), correct `Authorization: Bearer` header
+  - [x] Test: no engineName → uses defaultEngine
+  - [x] Test: OIDC token failure → propagates as structured MCP error
+  - [x] Test: checkConnectivity with OIDC engine → fetches token for health check
+  - [x] Test: checkConnectivity skipped when skipHealthCheck=true (existing test preserved)
 
 ## Dev Notes
 
@@ -123,3 +123,23 @@ export async function checkConnectivity(config: ResolvedConfig): Promise<void> {
 - Story 10.1: `ResolvedConfig`, `EngineConfig`, `AuthConfig` types
 - Story 10.2: `getTokenManager()` function
 - Existing story: `_bmad-output/implementation-artifacts/1-3-http-client-factory-and-error-normalization.md`
+
+## Dev Agent Record
+
+### Completion Notes
+
+- `createOperatonClient` now accepts `ResolvedConfig` with optional engine name override
+- `buildAuthHeader` helper handles both Basic and OIDC auth dispatch
+- OIDC errors are caught and re-thrown as `{ type: 'auth_error', cause: ... }` structured errors
+- `checkConnectivity` updated to use new auth dispatch
+- TypeScript `tsc --noEmit` passed — no changes needed in generated tool files
+- 14 unit tests pass (all new + preserved existing behavior)
+
+## File List
+
+- `src/http/client.ts` (modified)
+- `test/unit/http/client.test.ts` (modified — full rewrite with new test cases)
+
+## Change Log
+
+- 2026-03-18: Implemented Story 10.3 — Multi-Engine HTTP Client & Connectivity

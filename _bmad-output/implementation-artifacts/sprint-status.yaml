@@ -111,16 +111,16 @@ development_status:
 
   # Epic 10: Authentication & Multi-Engine Support
   epic-10: in-progress
-  10-1-config-schema-multi-engine-auth: ready-for-dev
-  10-2-oidc-token-manager: ready-for-dev
-  10-3-multi-engine-http-client: ready-for-dev
-  10-4-auth-integration-tests: ready-for-dev
+  10-1-config-schema-multi-engine-auth: review
+  10-2-oidc-token-manager: review
+  10-3-multi-engine-http-client: review
+  10-4-auth-integration-tests: review
   epic-10-retrospective: optional
 
   # Epic 11: Professional Documentation & Project Health
   epic-11: in-progress
-  11-1-readme-overhaul: ready-for-dev
-  11-2-configuration-guide: ready-for-dev
-  11-3-github-community-files: ready-for-dev
-  11-4-project-metadata-and-polish: ready-for-dev
+  11-1-readme-overhaul: in-progress
+  11-2-configuration-guide: in-progress
+  11-3-github-community-files: in-progress
+  11-4-project-metadata-and-polish: in-progress
   epic-11-retrospective: optional

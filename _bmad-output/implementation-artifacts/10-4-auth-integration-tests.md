@@ -1,6 +1,6 @@
 # Story 10.4: Auth & Multi-Engine Integration Tests
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,30 +26,30 @@ so that regressions in auth behavior are caught before release.
 
 ## Tasks / Subtasks
 
-- [ ] Set up mock HTTP infrastructure for tests (AC: 7)
-  - [ ] Add `msw` (Mock Service Worker) or `nock` as a dev dependency for HTTP interception
-  - [ ] Create `test/integration/helpers/mock-oidc-server.ts` — mock token endpoint handler
-    - [ ] Responds to POST with `{ access_token: 'test-token', expires_in: 3600 }`
-    - [ ] Configurable: can return error status, custom TTL, specific token value
-  - [ ] Create `test/integration/helpers/mock-operaton-server.ts` — mock Operaton endpoint handler
-    - [ ] Records received request headers for assertion
-    - [ ] Returns minimal valid Operaton REST responses
-- [ ] Write integration test: basic auth (AC: 2, 4)
-  - [ ] File: `test/integration/auth/basic-auth.test.ts`
-  - [ ] Test: legacy env vars → `Authorization: Basic` header on requests
-  - [ ] Test: config file basic engine → `Authorization: Basic` header on requests
-- [ ] Write integration test: OIDC auth (AC: 1, 5, 6)
-  - [ ] File: `test/integration/auth/oidc-auth.test.ts`
-  - [ ] Test: OIDC engine → token fetched once, `Authorization: Bearer` header sent
-  - [ ] Test: token expiry → use `vi.useFakeTimers()` to advance clock past `expiresAt - 30_000`; verify a second `getToken()` call triggers a new fetch (see Dev Notes for pattern)
-  - [ ] Test: OIDC endpoint error → structured MCP error returned
-- [ ] Write integration test: multi-engine (AC: 3)
-  - [ ] File: `test/integration/auth/multi-engine.test.ts`
-  - [ ] Test: two-engine config file → default engine used for calls without engine param; verify request goes to default engine's URL
-  - [ ] Test: non-default engine routing → explicitly create a client for the non-default engine by name and verify the request goes to *that* engine's URL (not the default's)
-- [ ] Ensure all tests pass in CI without network access (AC: 7)
-  - [ ] Add `OPERATON_SKIP_HEALTH_CHECK=true` to test environment
-  - [ ] Verify `vitest` test run completes with all mocks in place
+- [x] Set up mock HTTP infrastructure for tests (AC: 7)
+  - [x] Add `msw` (Mock Service Worker) as a dev dependency for HTTP interception
+  - [x] Create `test/integration/helpers/mock-oidc-server.ts` — mock token endpoint handler
+    - [x] Responds to POST with `{ access_token: 'test-token', expires_in: 3600 }`
+    - [x] Configurable: can return error status, custom TTL, specific token value
+  - [x] Create `test/integration/helpers/mock-operaton-server.ts` — mock Operaton endpoint handler
+    - [x] Records received request headers for assertion
+    - [x] Returns minimal valid Operaton REST responses
+- [x] Write integration test: basic auth (AC: 2, 4)
+  - [x] File: `test/integration/auth/basic-auth.test.ts`
+  - [x] Test: legacy env vars → `Authorization: Basic` header on requests
+  - [x] Test: config file basic engine → `Authorization: Basic` header on requests
+- [x] Write integration test: OIDC auth (AC: 1, 5, 6)
+  - [x] File: `test/integration/auth/oidc-auth.test.ts`
+  - [x] Test: OIDC engine → token fetched once, `Authorization: Bearer` header sent
+  - [x] Test: token expiry → use `vi.useFakeTimers()` to advance clock past `expiresAt - 30_000`; verify a second `getToken()` call triggers a new fetch
+  - [x] Test: OIDC endpoint error → structured MCP error returned
+- [x] Write integration test: multi-engine (AC: 3)
+  - [x] File: `test/integration/auth/multi-engine.test.ts`
+  - [x] Test: two-engine config file → default engine used for calls without engine param; verify request goes to default engine's URL
+  - [x] Test: non-default engine routing → explicitly create a client for the non-default engine by name and verify the request goes to *that* engine's URL (not the default's)
+- [x] Ensure all tests pass in CI without network access (AC: 7)
+  - [x] Add `OPERATON_SKIP_HEALTH_CHECK=true` to test environment
+  - [x] Verify `vitest` test run completes with all mocks in place
 
 ## Dev Notes
 
@@ -177,3 +177,26 @@ it('refreshes token after expiry', async () => {
 - Story 10.2: `TokenManager`, `clearTokenManagerRegistry()`
 - Story 10.3: `createOperatonClient()`, `checkConnectivity()`
 - Existing integration test patterns in `test/integration/`
+
+## Dev Agent Record
+
+### Completion Notes
+
+- `msw` v2 added as dev dependency for HTTP interception
+- All test helpers created with configurable options
+- 10 integration tests created covering all 7 ACs
+- All tests pass without any real network access
+- Fake timers pattern used for token expiry test (no sleep, no flakiness)
+
+## File List
+
+- `package.json` (modified — added msw dev dependency)
+- `test/integration/helpers/mock-oidc-server.ts` (created)
+- `test/integration/helpers/mock-operaton-server.ts` (created)
+- `test/integration/auth/basic-auth.test.ts` (created)
+- `test/integration/auth/oidc-auth.test.ts` (created)
+- `test/integration/auth/multi-engine.test.ts` (created)
+
+## Change Log
+
+- 2026-03-18: Implemented Story 10.4 — Auth & Multi-Engine Integration Tests

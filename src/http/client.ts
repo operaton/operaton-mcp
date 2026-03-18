@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { Config } from "../config.js";
+import type { ResolvedConfig, EngineConfig } from "../config.js";
+import { getTokenManager } from "../auth/token-manager.js";
 import { normalize } from "./errors.js";
 import type { McpToolError } from "./errors.js";
 
@@ -24,16 +25,43 @@ export interface OperatonClient {
   delete(path: string): Promise<unknown>;
 }
 
-function createBasicAuthHeader(username: string, password: string): string {
-  return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
+async function buildAuthHeader(
+  engineName: string,
+  engine: EngineConfig,
+): Promise<string> {
+  if (engine.authentication.type === "basic") {
+    const { username, password } = engine.authentication;
+    return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
+  } else {
+    try {
+      const token = await getTokenManager(
+        engineName,
+        engine.authentication,
+      ).getToken();
+      return `Bearer ${token}`;
+    } catch (err) {
+      throw {
+        type: "auth_error",
+        cause: `OIDC authentication failed: ${(err as Error).message}`,
+      };
+    }
+  }
 }
 
-export function createOperatonClient(config: Config): OperatonClient {
-  const authHeader = createBasicAuthHeader(config.username, config.password);
-  const baseUrl = config.baseUrl.replace(/\/+$/, "");
+export function createOperatonClient(
+  config: ResolvedConfig,
+  engineName?: string,
+): OperatonClient {
+  const resolvedEngineName = engineName ?? config.defaultEngine;
+  const engine = config.engines[resolvedEngineName];
+  if (!engine) {
+    throw new Error(`[operaton-mcp] Unknown engine: "${resolvedEngineName}"`);
+  }
+
+  const baseUrl = engine.url.replace(/\/+$/, "");
 
   function resolvePath(path: string): string {
-    return path.replace("{engineName}", config.engineName);
+    return path.replace("{engineName}", resolvedEngineName);
   }
 
   async function request(
@@ -43,6 +71,7 @@ export function createOperatonClient(config: Config): OperatonClient {
   ): Promise<unknown> {
     const resolvedPath = resolvePath(path);
     const url = `${baseUrl}${resolvedPath}`;
+    const authHeader = await buildAuthHeader(resolvedEngineName, engine!);
     const headers: Record<string, string> = {
       Authorization: authHeader,
       Accept: "application/json",
@@ -69,9 +98,13 @@ export function createOperatonClient(config: Config): OperatonClient {
     return text ? (JSON.parse(text) as unknown) : {};
   }
 
-  async function requestMultipart(path: string, fields: Record<string, string>): Promise<unknown> {
+  async function requestMultipart(
+    path: string,
+    fields: Record<string, string>,
+  ): Promise<unknown> {
     const resolvedPath = resolvePath(path);
     const url = `${baseUrl}${resolvedPath}`;
+    const authHeader = await buildAuthHeader(resolvedEngineName, engine!);
     const form = new FormData();
     for (const [key, value] of Object.entries(fields)) {
       form.append(key, value);
@@ -104,26 +137,27 @@ export function createOperatonClient(config: Config): OperatonClient {
   };
 }
 
-export async function checkConnectivity(config: Config): Promise<void> {
+export async function checkConnectivity(config: ResolvedConfig): Promise<void> {
   if (config.skipHealthCheck) {
     return;
   }
 
-  const authHeader = createBasicAuthHeader(config.username, config.password);
-  const url = config.baseUrl.replace(/\/+$/, "");
+  const engine = config.engines[config.defaultEngine]!;
+  const url = engine.url.replace(/\/+$/, "");
 
   try {
+    const authHeader = await buildAuthHeader(config.defaultEngine, engine);
     const response = await fetch(`${url}/engine`, {
       headers: { Authorization: authHeader },
     });
     if (!response.ok) {
       console.error(
-        `[operaton-mcp] Warning: Cannot reach Operaton at ${url}. Verify with: curl -u $OPERATON_USERNAME:$OPERATON_PASSWORD $OPERATON_BASE_URL/engine`,
+        `[operaton-mcp] Warning: Cannot reach Operaton at ${url}. Verify connectivity.`,
       );
     }
   } catch {
     console.error(
-      `[operaton-mcp] Warning: Cannot reach Operaton at ${url}. Verify with: curl -u $OPERATON_USERNAME:$OPERATON_PASSWORD $OPERATON_BASE_URL/engine`,
+      `[operaton-mcp] Warning: Cannot reach Operaton at ${url}. Verify connectivity.`,
     );
   }
 }

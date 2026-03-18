@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/operaton/operaton-mcp/blob/main/docs/configuration.md
+    about: Configuration guide and troubleshooting

@@ -1,6 +1,6 @@
 # Story 10.1: Config Schema — Multi-Engine & Auth Type Discriminator
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -40,42 +40,42 @@ so that the server connects to the right engine with the right authentication st
 
 ## Tasks / Subtasks
 
-- [ ] Define new TypeScript types in `src/config.ts` (AC: 6, 7)
-  - [ ] `BasicAuthConfig`: `{ type: 'basic'; username: string; password: string }`
-  - [ ] `OidcAuthConfig`: `{ type: 'oidc'; clientId: string; clientSecret: string; tokenUrl: string }`
-  - [ ] `AuthConfig`: union of `BasicAuthConfig | OidcAuthConfig`
-  - [ ] `EngineConfig`: `{ url: string; default?: boolean; authentication: AuthConfig }`
-  - [ ] `MultiEngineConfig`: `{ engines: Record<string, EngineConfig> }`
-  - [ ] `ResolvedConfig`: runtime config with `engines: Record<string, EngineConfig>`, `defaultEngine: string`, `skipHealthCheck: boolean`
-  - [ ] Remove old flat `Config` interface (replace with `ResolvedConfig`)
-- [ ] Implement `loadConfig(): ResolvedConfig` with three resolution paths (AC: 1, 2, 3)
-  - [ ] Path A — `OPERATON_CONFIG` is set: read and parse JSON file, validate schema, resolve default engine
-  - [ ] Path B — env vars with `OPERATON_USERNAME` set: build basic-auth single-engine config
-  - [ ] Path C — env vars with `OPERATON_CLIENT_ID` set: build OIDC single-engine config
-  - [ ] Path B/C: engine name defaults to `OPERATON_ENGINE` env var or `"default"`
-  - [ ] Ambiguity guard: if both `OPERATON_USERNAME` and `OPERATON_CLIENT_ID` are set → exit with AC 10 error message
-  - [ ] No-config guard: if none of `OPERATON_CONFIG`, `OPERATON_USERNAME`, `OPERATON_CLIENT_ID` is set → exit with AC 11 error message
-- [ ] Validate multi-engine default resolution (AC: 4, 5)
-  - [ ] Count engines with `default: true`; exit with error if 0 and >1 engine
-  - [ ] Exit with error if >1 engine has `default: true`
-  - [ ] If exactly 1 engine total (no `default` field), promote it to default automatically
-- [ ] Handle config file errors (AC: 8, 9)
-  - [ ] `ENOENT` → exit with file-not-found message
-  - [ ] JSON.parse failure → exit with parse error message
-- [ ] Update `src/index.ts` to use `ResolvedConfig` (no logic change, just type update)
-- [ ] Update `src/http/client.ts` to accept `EngineConfig` instead of flat username/password fields
-- [ ] Write unit tests for all config resolution paths
-  - [ ] Legacy env vars (basic) → ResolvedConfig with basic auth default engine
-  - [ ] Env vars OIDC → ResolvedConfig with OIDC auth default engine
-  - [ ] Config file single engine (basic) → correct ResolvedConfig
-  - [ ] Config file single engine (OIDC) → correct ResolvedConfig
-  - [ ] Config file two engines, one default → correct defaultEngine name resolved
-  - [ ] Config file two engines, no default → process.exit with correct message
-  - [ ] Config file two engines, both default → process.exit with correct message
-  - [ ] Config file not found → process.exit with file-not-found message
-  - [ ] Config file invalid JSON → process.exit with parse error message
-  - [ ] Both OPERATON_USERNAME and OPERATON_CLIENT_ID set → process.exit with ambiguity message (AC: 10)
-  - [ ] No config, no username, no clientId → process.exit with no-configuration message (AC: 11)
+- [x] Define new TypeScript types in `src/config.ts` (AC: 6, 7)
+  - [x] `BasicAuthConfig`: `{ type: 'basic'; username: string; password: string }`
+  - [x] `OidcAuthConfig`: `{ type: 'oidc'; clientId: string; clientSecret: string; tokenUrl: string }`
+  - [x] `AuthConfig`: union of `BasicAuthConfig | OidcAuthConfig`
+  - [x] `EngineConfig`: `{ url: string; default?: boolean; authentication: AuthConfig }`
+  - [x] `MultiEngineConfig`: `{ engines: Record<string, EngineConfig> }`
+  - [x] `ResolvedConfig`: runtime config with `engines: Record<string, EngineConfig>`, `defaultEngine: string`, `skipHealthCheck: boolean`
+  - [x] Remove old flat `Config` interface (replace with `ResolvedConfig`)
+- [x] Implement `loadConfig(): ResolvedConfig` with three resolution paths (AC: 1, 2, 3)
+  - [x] Path A — `OPERATON_CONFIG` is set: read and parse JSON file, validate schema, resolve default engine
+  - [x] Path B — env vars with `OPERATON_USERNAME` set: build basic-auth single-engine config
+  - [x] Path C — env vars with `OPERATON_CLIENT_ID` set: build OIDC single-engine config
+  - [x] Path B/C: engine name defaults to `OPERATON_ENGINE` env var or `"default"`
+  - [x] Ambiguity guard: if both `OPERATON_USERNAME` and `OPERATON_CLIENT_ID` are set → exit with AC 10 error message
+  - [x] No-config guard: if none of `OPERATON_CONFIG`, `OPERATON_USERNAME`, `OPERATON_CLIENT_ID` is set → exit with AC 11 error message
+- [x] Validate multi-engine default resolution (AC: 4, 5)
+  - [x] Count engines with `default: true`; exit with error if 0 and >1 engine
+  - [x] Exit with error if >1 engine has `default: true`
+  - [x] If exactly 1 engine total (no `default` field), promote it to default automatically
+- [x] Handle config file errors (AC: 8, 9)
+  - [x] `ENOENT` → exit with file-not-found message
+  - [x] JSON.parse failure → exit with parse error message
+- [x] Update `src/index.ts` to use `ResolvedConfig` (no logic change, just type update)
+- [x] Update `src/http/client.ts` to accept `EngineConfig` instead of flat username/password fields
+- [x] Write unit tests for all config resolution paths
+  - [x] Legacy env vars (basic) → ResolvedConfig with basic auth default engine
+  - [x] Env vars OIDC → ResolvedConfig with OIDC auth default engine
+  - [x] Config file single engine (basic) → correct ResolvedConfig
+  - [x] Config file single engine (OIDC) → correct ResolvedConfig
+  - [x] Config file two engines, one default → correct defaultEngine name resolved
+  - [x] Config file two engines, no default → process.exit with correct message
+  - [x] Config file two engines, both default → process.exit with correct message
+  - [x] Config file not found → process.exit with file-not-found message
+  - [x] Config file invalid JSON → process.exit with parse error message
+  - [x] Both OPERATON_USERNAME and OPERATON_CLIENT_ID set → process.exit with ambiguity message (AC: 10)
+  - [x] No config, no username, no clientId → process.exit with no-configuration message (AC: 11)
 
 ## Dev Notes
 
@@ -178,3 +178,27 @@ export interface ResolvedConfig {
 - Existing story: `_bmad-output/implementation-artifacts/1-2-configuration-module-and-startup-validation.md`
 - Architecture: `_bmad-output/planning-artifacts/architecture.md#Authentication & Security`
 - Follow-on: Story 10.2 (TokenManager), Story 10.3 (multi-engine routing)
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Rewrote `src/config.ts` to support three resolution paths (Path A: config file, Path B: basic auth env vars, Path C: OIDC env vars) with proper ambiguity and no-config guards. Removed old flat `Config` interface and replaced with discriminated union types + `ResolvedConfig`. Updated `src/http/client.ts` to accept `ResolvedConfig` and `EngineConfig`. All 16 unit tests pass.
+
+### Completion Notes
+
+- All config types defined: `BasicAuthConfig`, `OidcAuthConfig`, `AuthConfig`, `EngineConfig`, `ResolvedConfig`
+- `loadConfig()` implements all 3 paths + ambiguity guard + no-config guard
+- Backward compatibility preserved: legacy env vars still work unchanged
+- 16 unit tests covering all 11 ACs pass with zero regressions
+- `src/index.ts` required no changes — types are structurally compatible
+
+## File List
+
+- `src/config.ts` (modified — full rewrite)
+- `src/http/client.ts` (modified — updated to use ResolvedConfig/EngineConfig; see Story 10.3)
+- `test/unit/config.test.ts` (modified — full rewrite with new test cases)
+
+## Change Log
+
+- 2026-03-18: Implemented Story 10.1 — Config schema multi-engine & auth type discriminator

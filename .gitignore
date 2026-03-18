@@ -13,3 +13,7 @@ src/generated/
 
 # Spec diff convenience files (authoritative change record is git history)
 resources/*.prev.json
+
+# operaton-mcp config files (may contain credentials)
+operaton-config.json
+*.operaton-config.json

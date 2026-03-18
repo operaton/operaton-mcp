@@ -1,6 +1,6 @@
 # Story 10.2: OIDC Token Manager
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,37 +30,37 @@ so that API calls are authenticated transparently without manual token managemen
 
 ## Tasks / Subtasks
 
-- [ ] Create `src/auth/token-manager.ts` (AC: 1, 2, 3, 7, 8)
-  - [ ] Export `TokenManager` class
-  - [ ] Constructor: `constructor(private config: OidcAuthConfig)` — receives config, no global state
-  - [ ] Private fields: `cachedToken: string | null`, `expiresAt: number | null`, `inflightRequest: Promise<string> | null`
-  - [ ] `async getToken(): Promise<string>` — main public method
-  - [ ] Cache check: return cached token if `Date.now() < expiresAt - 30_000`
-  - [ ] If no valid cache, fetch new token
-  - [ ] Store `access_token` and compute `expiresAt` from `expires_in` (default 3600s)
-  - [ ] `clearCache(): void` — reset cache fields (for testing)
-- [ ] Implement concurrent request deduplication (AC: 4)
-  - [ ] If `inflightRequest` is not null, return the existing promise
-  - [ ] Set `inflightRequest` before fetch, clear it in `finally` block
-- [ ] Implement token fetch via `fetch()` (AC: 1, 5, 6)
-  - [ ] POST to `config.tokenUrl` with `Content-Type: application/x-www-form-urlencoded`
-  - [ ] Body: `grant_type=client_credentials&client_id={clientId}&client_secret={clientSecret}`
-  - [ ] Non-2xx: throw with `[operaton-mcp] OIDC token fetch failed: HTTP {status} from {tokenUrl}`
-  - [ ] Network error: catch and rethrow with `[operaton-mcp] OIDC token fetch failed: {error.message}`
-- [ ] Export registry functions (module-level singleton map of engine name → TokenManager)
-  - [ ] `getTokenManager(engineName: string, config: OidcAuthConfig): TokenManager` — returns existing or creates new instance
-  - [ ] `clearTokenManagerRegistry(): void` — resets all instances (test isolation only)
-  - [ ] Initialized once per engine on first OIDC call
-- [ ] Write unit tests for TokenManager (AC: 1–9)
-  - [ ] Mock `fetch` using `vi.stubGlobal('fetch', ...)`
-  - [ ] Test: cold cache → fetches token, caches with correct expiry
-  - [ ] Test: warm cache → returns cached, no fetch called
-  - [ ] Test: near-expiry cache (< 30s) → fetches new token
-  - [ ] Test: concurrent calls → only one fetch, both callers get same token
-  - [ ] Test: non-2xx response → throws with correct message
-  - [ ] Test: network error → throws with correct message
-  - [ ] Test: missing `expires_in` → defaults to 3600s expiry
-  - [ ] Test: `clearCache()` → next getToken fetches fresh
+- [x] Create `src/auth/token-manager.ts` (AC: 1, 2, 3, 7, 8)
+  - [x] Export `TokenManager` class
+  - [x] Constructor: `constructor(private config: OidcAuthConfig)` — receives config, no global state
+  - [x] Private fields: `cachedToken: string | null`, `expiresAt: number | null`, `inflightRequest: Promise<string> | null`
+  - [x] `async getToken(): Promise<string>` — main public method
+  - [x] Cache check: return cached token if `Date.now() < expiresAt - 30_000`
+  - [x] If no valid cache, fetch new token
+  - [x] Store `access_token` and compute `expiresAt` from `expires_in` (default 3600s)
+  - [x] `clearCache(): void` — reset cache fields (for testing)
+- [x] Implement concurrent request deduplication (AC: 4)
+  - [x] If `inflightRequest` is not null, return the existing promise
+  - [x] Set `inflightRequest` before fetch, clear it in `finally` block
+- [x] Implement token fetch via `fetch()` (AC: 1, 5, 6)
+  - [x] POST to `config.tokenUrl` with `Content-Type: application/x-www-form-urlencoded`
+  - [x] Body: `grant_type=client_credentials&client_id={clientId}&client_secret={clientSecret}`
+  - [x] Non-2xx: throw with `[operaton-mcp] OIDC token fetch failed: HTTP {status} from {tokenUrl}`
+  - [x] Network error: catch and rethrow with `[operaton-mcp] OIDC token fetch failed: {error.message}`
+- [x] Export registry functions (module-level singleton map of engine name → TokenManager)
+  - [x] `getTokenManager(engineName: string, config: OidcAuthConfig): TokenManager` — returns existing or creates new instance
+  - [x] `clearTokenManagerRegistry(): void` — resets all instances (test isolation only)
+  - [x] Initialized once per engine on first OIDC call
+- [x] Write unit tests for TokenManager (AC: 1–9)
+  - [x] Mock `fetch` using `vi.stubGlobal('fetch', ...)`
+  - [x] Test: cold cache → fetches token, caches with correct expiry
+  - [x] Test: warm cache → returns cached, no fetch called
+  - [x] Test: near-expiry cache (< 30s) → fetches new token
+  - [x] Test: concurrent calls → only one fetch, both callers get same token
+  - [x] Test: non-2xx response → throws with correct message
+  - [x] Test: network error → throws with correct message
+  - [x] Test: missing `expires_in` → defaults to 3600s expiry
+  - [x] Test: `clearCache()` → next getToken fetches fresh
 
 ## Dev Notes
 
@@ -159,3 +159,21 @@ export function clearTokenManagerRegistry(): void {
 
 - Config types from Story 10.1: `OidcAuthConfig` interface in `src/config.ts`
 - Used by Story 10.3: `src/http/client.ts` calls `getTokenManager()` for OIDC engines
+
+## Dev Agent Record
+
+### Completion Notes
+
+- `TokenManager` class implemented with in-flight deduplication, 30s proactive refresh buffer, and configurable expiry
+- Registry pattern provides per-engine singleton instances
+- 11 unit tests (8 for TokenManager + 3 for registry) all pass
+- Uses `URLSearchParams` for proper URL-encoded request body
+
+## File List
+
+- `src/auth/token-manager.ts` (created)
+- `test/unit/auth/token-manager.test.ts` (created)
+
+## Change Log
+
+- 2026-03-18: Implemented Story 10.2 — OIDC Token Manager
