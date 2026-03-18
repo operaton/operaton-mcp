@@ -46,11 +46,11 @@ jobs:
           npm version "$CURRENT-SNAPSHOT" --no-git-tag-version
           echo "SNAPSHOT_VERSION=$CURRENT-SNAPSHOT" >> "$GITHUB_ENV"
 
-      - name: Publish to NPM (next dist-tag)
-        if: inputs.release_type == 'preliminary' && !inputs.dry_run
-        run: npm publish --tag next --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPLOY_TOKEN }}
+      #- name: Publish to NPM (next dist-tag)
+      #  if: inputs.release_type == 'preliminary' && !inputs.dry_run
+      #  run: npm publish --tag next --provenance
+      #  env:
+      #    NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPLOY_TOKEN }}
 
       - name: Create pre-release via JReleaser
         if: inputs.release_type == 'preliminary' && !inputs.dry_run
