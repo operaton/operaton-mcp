@@ -1,0 +1,67 @@
+name: Rebase Dependabot PRs
+
+on:
+  schedule:
+    # Run at 3:00 AM UTC daily (before auto-merge runs at 4 AM)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  rebase:
+    name: Tell Dependabot to rebase all its open PRs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Rebase Dependabot PRs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+
+            const dependabotPRs = pullRequests.filter(pr => pr.user.login === 'dependabot[bot]');
+
+            console.log(`🔍 Found ${dependabotPRs.length} open Dependabot PR(s)`);
+
+            const rebaseComment = '@dependabot rebase';
+
+            for (const pr of dependabotPRs) {
+              console.log(`\n📝 Processing PR #${pr.number}: ${pr.title}`);
+
+              // Check if we already posted a rebase comment recently (within last 24 hours)
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                since: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+              });
+
+              const alreadyRequested = comments.some(
+                comment => comment.user.login === 'github-actions[bot]' &&
+                           comment.body.trim() === rebaseComment
+              );
+
+              if (alreadyRequested) {
+                console.log(`  ℹ️  Rebase already requested in the last 24 hours`);
+                continue;
+              }
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: rebaseComment
+              });
+
+              console.log(`  ✅ Requested rebase for PR #${pr.number}`);
+            }
+
+            console.log(`\n✨ Dependabot rebase workflow completed`);
