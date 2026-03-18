@@ -20,6 +20,3 @@ distributions:
     type: FLAT_BINARY
     artifacts:
       - path: '{{projectName}}-{{projectVersion}}.tgz'
-    npm:
-      packageName: "@operaton/operaton-mcp"
-      access: PUBLIC
