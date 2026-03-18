@@ -1,5 +1,5 @@
 # generated: 2026-03-18
-# last_updated: 2026-03-18
+# last_updated: 2026-03-18 (code review completed, all stories approved)
 # project: operaton-mcp
 # project_key: NOKEY
 # tracking_system: file-system
@@ -110,27 +110,27 @@ development_status:
   epic-9-retrospective: optional
 
   # Epic 10: Authentication & Multi-Engine Support
-  epic-10: in-progress
-  10-1-config-schema-multi-engine-auth: review
-  10-2-oidc-token-manager: review
-  10-3-multi-engine-http-client: review
-  10-4-auth-integration-tests: review
+  epic-10: done
+  10-1-config-schema-multi-engine-auth: done
+  10-2-oidc-token-manager: done
+  10-3-multi-engine-http-client: done
+  10-4-auth-integration-tests: done
   epic-10-retrospective: optional
 
   # Epic 11: Professional Documentation & Project Health
-  epic-11: in-progress
-  11-1-readme-overhaul: review
-  11-2-configuration-guide: review
-  11-3-github-community-files: review
-  11-4-project-metadata-and-polish: review
+  epic-11: done
+  11-1-readme-overhaul: done
+  11-2-configuration-guide: done
+  11-3-github-community-files: done
+  11-4-project-metadata-and-polish: done
   epic-11-retrospective: optional
 
   # Epic 12: Process Instance Migration
-  epic-12: in-progress
-  12-1-migration-discovery: review
-  12-2-migration-plan-management: review
-  12-3-async-batch-execution: review
-  12-4-batch-monitoring-and-recovery: review
-  12-5-post-migration-reporting: review
-  12-6-historic-batch-access: review
+  epic-12: done
+  12-1-migration-discovery: done
+  12-2-migration-plan-management: done
+  12-3-async-batch-execution: done
+  12-4-batch-monitoring-and-recovery: done
+  12-5-post-migration-reporting: done
+  12-6-historic-batch-access: done
   epic-12-retrospective: optional
