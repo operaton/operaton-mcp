@@ -48,9 +48,13 @@ jobs:
 
       - name: Publish to NPM (next dist-tag)
         if: inputs.release_type == 'preliminary' && !inputs.dry_run
-        run: npm publish --tag next --provenance --access public
+        run: npm publish --tag next --access public
         env:
          NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPLOY_TOKEN }}
+
+      - name: Pack npm tarball
+        if: inputs.release_type == 'preliminary' && !inputs.dry_run
+        run: npm pack
 
       - name: Create pre-release via JReleaser
         if: inputs.release_type == 'preliminary' && !inputs.dry_run
@@ -93,6 +97,10 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPLOY_TOKEN }}
+
+      - name: Pack npm tarball
+        if: inputs.release_type == 'final' && !inputs.dry_run
+        run: npm pack
 
       - name: Create release via JReleaser
         if: inputs.release_type == 'final' && !inputs.dry_run
