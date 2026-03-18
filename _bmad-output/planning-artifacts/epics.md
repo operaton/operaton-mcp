@@ -1130,3 +1130,115 @@ So that I can quickly determine whether operaton-mcp meets my needs.
 **Given** `README.md` is reviewed
 **When** checking the original sections from Story 1.6
 **Then** all 5 original sections (Install & Run, Environment Variables, MCP Client Configuration, Available Tool Groups, Development) are still present and unchanged in content
+
+---
+
+## Epic 10: Authentication & Multi-Engine Support
+
+**Goal:** Extend operaton-mcp to support OIDC client credentials authentication alongside existing Basic Auth, and allow multiple named Operaton engine endpoints to be configured — with full backward compatibility for existing single-engine env-var configurations.
+
+**Stories:**
+
+### Story 10.1: Config Schema — Multi-Engine & Auth Type Discriminator
+
+As an engineer deploying operaton-mcp,
+I want to configure one or more Operaton engines with either Basic Auth or OIDC client credentials,
+so that the server connects to the right engine with the right authentication strategy at startup.
+
+**Key Acceptance Criteria:**
+- Legacy `OPERATON_BASE_URL` + `OPERATON_USERNAME` + `OPERATON_PASSWORD` env vars continue to work unchanged (zero migration)
+- New env vars `OPERATON_CLIENT_ID`, `OPERATON_CLIENT_SECRET`, `OPERATON_TOKEN_URL` enable OIDC single-engine mode
+- `OPERATON_CONFIG` env var points to a JSON config file enabling multi-engine mode
+- Config file supports named engines with `authentication.type: "basic" | "oidc"` discriminator
+- Multi-engine config requires exactly one engine with `"default": true`; startup fails fast with clear error if ambiguous
+
+### Story 10.2: OIDC Token Manager
+
+As an engineer using operaton-mcp with an OIDC-secured Operaton instance,
+I want the server to automatically obtain and refresh bearer tokens using client credentials,
+so that API calls are authenticated transparently without manual token management.
+
+**Key Acceptance Criteria:**
+- Fetches token on first use (lazy), caches with expiry from `expires_in`
+- Proactively refreshes 30 seconds before expiry
+- Handles concurrent requests safely (no thundering herd)
+- Structured error messages on token fetch failure
+
+### Story 10.3: Multi-Engine HTTP Client & Connectivity
+
+As a developer using operaton-mcp,
+I want the HTTP client to route requests to the correct Operaton engine using the appropriate auth strategy,
+so that all tool calls are authenticated correctly without any per-tool changes.
+
+**Key Acceptance Criteria:**
+- Basic auth engines use `Authorization: Basic` header
+- OIDC engines call TokenManager and use `Authorization: Bearer` header
+- Default engine selected automatically; `defaultEngine` used for all tool calls
+- Startup connectivity check works with both auth types
+
+### Story 10.4: Auth & Multi-Engine Integration Tests
+
+As a developer maintaining operaton-mcp,
+I want automated integration tests covering all authentication modes and multi-engine config,
+so that regressions in auth behavior are caught before release.
+
+**Key Acceptance Criteria:**
+- Mock OIDC token endpoint (using `msw`) — no real external services in CI
+- Tests for: basic auth, OIDC auth, token refresh, OIDC error handling, multi-engine config
+- Legacy env-var config regression test
+
+---
+
+## Epic 11: Professional Documentation & Project Health
+
+**Goal:** Elevate operaton-mcp to a professionally documented open source project with a polished README, a comprehensive configuration guide, GitHub community health files (issue templates, PR template), and correct project metadata — giving first-time visitors an immediate impression of quality.
+
+**Stories:**
+
+### Story 11.1: README Overhaul
+
+As a developer discovering operaton-mcp on GitHub or npm,
+I want a professional, well-structured README that immediately communicates what the project does and how to get started,
+so that I can evaluate and adopt the project within minutes.
+
+**Key Acceptance Criteria:**
+- Badge row: npm version, CI status, license, Node.js compatibility
+- Complete Quick Start Claude Desktop config snippet (copy-pasteable)
+- Authentication section covers both Basic Auth and OIDC with examples
+- Links to `docs/configuration.md` for multi-engine setup
+
+### Story 11.2: Configuration Guide
+
+As a developer configuring operaton-mcp for a real deployment,
+I want a dedicated configuration reference covering all scenarios,
+so that I can configure the server correctly without reading source code.
+
+**Key Acceptance Criteria:**
+- `docs/configuration.md` with three annotated examples: basic auth env vars, OIDC env vars, multi-engine config file
+- Complete environment variable reference table
+- Security best practices callout (no hardcoded secrets, gitignore patterns)
+- Troubleshooting section with common error messages
+
+### Story 11.3: GitHub Community Files
+
+As a contributor approaching operaton-mcp on GitHub,
+I want well-structured issue templates and a PR template,
+so that maintainers can triage efficiently.
+
+**Key Acceptance Criteria:**
+- `.github/ISSUE_TEMPLATE/bug_report.yml` — GitHub form-based template with structured fields
+- `.github/ISSUE_TEMPLATE/feature_request.yml` — form-based template
+- `.github/pull_request_template.md` — checklist-based PR template
+- `CONTRIBUTING.md` updated to reference templates and PR process
+
+### Story 11.4: GitHub Project Metadata & Repository Polish
+
+As a developer discovering operaton-mcp via GitHub search,
+I want a polished repository with accurate description, relevant topics, and correct npm metadata,
+so that the project's quality and scope are immediately apparent.
+
+**Key Acceptance Criteria:**
+- `package.json` description, keywords, homepage, bugs, repository fields populated
+- `CODE_OF_CONDUCT.md` added (Contributor Covenant 2.1)
+- GitHub repository topics, description, website set (manual admin step documented)
+- npm publish exclusions verified (`package.json#files` or `.npmignore`)
