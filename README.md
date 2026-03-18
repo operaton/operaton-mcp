@@ -2,10 +2,10 @@
 
 > MCP server exposing the full Operaton BPMN/DMN REST API to AI assistants
 
-[![npm version](https://img.shields.io/npm/v/operaton-mcp)](https://www.npmjs.com/package/operaton-mcp)
+[![npm version](https://img.shields.io/npm/v/@operaton/operaton-mcp)](https://www.npmjs.com/package/@operaton/operaton-mcp)
 [![CI](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Node.js](https://img.shields.io/node/v/operaton-mcp)](https://nodejs.org)
+[![Node.js](https://img.shields.io/node/v/@operaton/operaton-mcp)](https://nodejs.org)
 
 [Operaton](https://operaton.org) is an open-source BPMN and DMN workflow engine. **operaton-mcp** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes 300+ Operaton REST API operations as MCP tools, enabling AI assistants like Claude to interact directly with your workflow engine — deploying processes, managing instances, handling tasks, and querying history.
 
@@ -204,6 +204,27 @@ Deploy and evaluate DMN decision tables.
 - **get XML by key** — fetch DMN XML for a decision
 - **evaluate** — evaluate a decision table with input variables
 - **list requirements** — list decision requirement diagrams (DRDs)
+
+### `migration`
+
+Discover, plan, execute, monitor, and audit process instance migrations between definition versions.
+
+- **listMigratable** (`processInstance_listMigratable`) — list active instances eligible for migration with per-instance eligibility and call-activity blocking conditions
+- **getMigrationCandidates** (`processDefinition_getMigrationCandidates`) — compare source and target definition activities; returns auto-mappable pairs, unmapped source activities, and new target activities
+- **generatePlan** (`migration_generatePlan`) — generate a migration plan with auto-mapped instructions and a list of unmapped activities requiring explicit mapping
+- **validatePlan** (`migration_validatePlan`) — validate a migration plan against a set of instances; returns typed errors, sampled-validation flag, and consequence disclosure
+- **executeBatch** (`migration_executeBatch`) — execute a migration plan asynchronously with auto-chunking; supports dry-run mode
+- **suspendBatch** (`migration_suspendBatch`) — suspend one or more active migration batches
+- **resumeBatch** (`migration_resumeBatch`) — resume one or more suspended migration batches
+- **deleteBatch** (`migration_deleteBatch`) — cancel (delete) one or more migration batches
+- **listBatches** (`migration_listBatches`) — list active migration batches, optionally filtered by suspended state
+- **awaitBatch** (`migration_awaitBatch`) — poll migration batches until completion or timeout; returns aggregated progress
+- **getBatchStatus** (`migration_getBatchStatus`) — get current job counts and suspension state for a single batch
+- **getBatchFailures** (`migration_getBatchFailures`) — retrieve per-instance failure details including error messages and stack traces
+- **retryFailedJobs** (`migration_retryFailedJobs`) — reset retries on all failed migration jobs in one or more batches
+- **getBatchSummary** (`migration_getBatchSummary`) — aggregate post-migration summary across batch IDs: submitted, succeeded, failed, duration
+- **listAuditEntries** (`migration_listAuditEntries`) — query the user operation log for migration audit entries with operator, timestamp, and definition filters
+- **listHistoricBatches** (`migration_listHistoricBatches`) — query the history log for completed migration batches with date-range and completion-state filters
 
 ## Example Prompts
 

@@ -119,8 +119,18 @@ development_status:
 
   # Epic 11: Professional Documentation & Project Health
   epic-11: in-progress
-  11-1-readme-overhaul: in-progress
-  11-2-configuration-guide: in-progress
-  11-3-github-community-files: in-progress
-  11-4-project-metadata-and-polish: in-progress
+  11-1-readme-overhaul: review
+  11-2-configuration-guide: review
+  11-3-github-community-files: review
+  11-4-project-metadata-and-polish: review
   epic-11-retrospective: optional
+
+  # Epic 12: Process Instance Migration
+  epic-12: in-progress
+  12-1-migration-discovery: review
+  12-2-migration-plan-management: review
+  12-3-async-batch-execution: review
+  12-4-batch-monitoring-and-recovery: review
+  12-5-post-migration-reporting: review
+  12-6-historic-batch-access: review
+  epic-12-retrospective: optional

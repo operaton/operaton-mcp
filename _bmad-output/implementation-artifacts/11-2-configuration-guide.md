@@ -1,6 +1,6 @@
 # Story 11.2: Configuration Guide
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -26,18 +26,18 @@ so that I can configure the server correctly without reading source code or gues
 
 ## Tasks / Subtasks
 
-- [ ] Create `docs/` directory if it does not exist
-- [ ] Create `docs/configuration.md` with the following sections (AC: 1–7)
-  - [ ] **Overview**: 2-3 sentences — how config works (env vars for simple cases, JSON file for multi-engine)
-  - [ ] **Quick Reference Table**: all environment variables (AC: 5)
-  - [ ] **Example 1 — Basic Auth (env vars)**: Claude Desktop snippet + variable table
-  - [ ] **Example 2 — OIDC (env vars)**: Claude Desktop snippet + variable table
-  - [ ] **Example 3 — Multi-Engine Config File**: full annotated JSON + how to reference via `OPERATON_CONFIG`
-  - [ ] **Default Engine Selection**: explain logic — one engine auto-default, multiple require `"default": true`, ambiguity = startup error
-  - [ ] **Security Best Practices**: callout box with: no hardcoded secrets, use env vars or secret manager, gitignore pattern for config files, `OPERATON_SKIP_HEALTH_CHECK` usage
-  - [ ] **Troubleshooting**: common errors and their meaning (missing required var, config file not found, no default engine)
-- [ ] Add `.gitignore` entry for `operaton-config.json` and `*.operaton-config.json` (AC: 4)
-- [ ] Verify all code examples are syntactically valid JSON (AC: 3)
+- [x] Create `docs/` directory if it does not exist
+- [x] Create `docs/configuration.md` with the following sections (AC: 1–7)
+  - [x] **Overview**: 2-3 sentences — how config works (env vars for simple cases, JSON file for multi-engine)
+  - [x] **Quick Reference Table**: all environment variables (AC: 5)
+  - [x] **Example 1 — Basic Auth (env vars)**: Claude Desktop snippet + variable table
+  - [x] **Example 2 — OIDC (env vars)**: Claude Desktop snippet + variable table
+  - [x] **Example 3 — Multi-Engine Config File**: full annotated JSON + how to reference via `OPERATON_CONFIG`
+  - [x] **Default Engine Selection**: explain logic — one engine auto-default, multiple require `"default": true`, ambiguity = startup error
+  - [x] **Security Best Practices**: callout box with: no hardcoded secrets, use env vars or secret manager, gitignore pattern for config files, `OPERATON_SKIP_HEALTH_CHECK` usage
+  - [x] **Troubleshooting**: common errors and their meaning (missing required var, config file not found, no default engine)
+- [x] Add `.gitignore` entry for `operaton-config.json` and `*.operaton-config.json` (AC: 4)
+- [x] Verify all code examples are syntactically valid JSON (AC: 3)
 
 ## Dev Notes
 
@@ -153,3 +153,21 @@ operaton-config.json
 
 - Story 10.1: complete env var list and config file format
 - Story 11.1: README links to this guide
+
+## Dev Agent Record
+
+### Completion Notes
+
+- `docs/configuration.md` verified against all 7 ACs — all satisfied.
+- File contains: Overview, Environment Variable Reference table, three worked examples (Basic Auth, OIDC, Multi-Engine), Default Engine Selection explanation, Security Best Practices, Troubleshooting table.
+- `.gitignore` already contains `operaton-config.json` and `*.operaton-config.json` entries.
+- All JSON examples validated as syntactically correct.
+
+## File List
+
+- `docs/configuration.md` — complete configuration reference (previously created)
+- `.gitignore` — operaton-config.json patterns (previously added)
+
+## Change Log
+
+- 2026-03-18: Story 11.2 verified complete — docs/configuration.md and .gitignore entries confirmed
