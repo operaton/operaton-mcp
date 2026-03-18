@@ -24,6 +24,8 @@ editHistory:
     changes: 'Added FR section (individual-operation level), NFR section, Setup Requirements section; fixed Success Criteria measurability; added Out of Scope; labeled Journey 3 as Growth-phase'
   - date: '2026-03-18'
     changes: 'Added FR-36–FR-42 (Project Infrastructure & Publishing): license headers with Operaton copyright, CONTRIBUTING.md with license header + conventional commit scopes, SECURITY.md, CI workflow with commitlint + .nvmrc, JReleaser config, release workflow with preliminary/final/dry-run modes + npm provenance, README tool groups + out-of-scope section. Added NFR-07 (release workflow dry-run fidelity). Added Journey 5 (Lena — OSS Contributor/Maintainer) with two arcs revealing FR-36–FR-42. Updated Journey Requirements Summary table. Tightened FR-40 wording. Restructured FR-41 as compound FR with (a)/(b)/(c) sub-bullets. Post-validation fixes: added infra line to MVP scope; updated stale FR counts in NFR-01/NFR-03; removed actions/setup-node leakage from FR-39.'
+  - date: '2026-03-18'
+    changes: 'Added FR-43–FR-57 (Process Instance Migration): discovery, migration candidate analysis, plan generation, plan validation with consequence disclosure, async batch execution with auto-chunking and dryRun flag, batch suspend/resume, batch awaiting, batch status, per-instance failure retrieval, failed job retry, batch listing, batch deletion, post-migration summary report, audit log access, historic batch access. Added Journey 6 (Marcus — Planned Migration). Updated Journey Requirements Summary table. Updated NFR-01 to include migration operations. Added migration to MVP scope.'
 ---
 
 # Product Requirements Document - operaton-mcp
@@ -83,6 +85,7 @@ Operaton's REST API is comprehensive and well-documented, but no existing tool e
 Full Operaton REST API surface as MCP tools, organized by domain:
 - Process definitions & deployments (deploy, list, get, delete)
 - Process instances (start, query, suspend, resume, delete, variables)
+- Process instance migration (discover candidates, generate & validate plans, async batch execute with auto-chunking, monitor, recover, audit)
 - Tasks (query, claim, unclaim, complete, delegate, set variables)
 - Jobs & job definitions (query, execute, suspend, resume, set retries)
 - Incidents (query, resolve)
@@ -90,6 +93,8 @@ Full Operaton REST API surface as MCP tools, organized by domain:
 - Historic data (process instances, activity instances, task history, variable history)
 - Decisions & DMN (deploy, evaluate)
 - Project infrastructure & publishing tooling (license headers, CONTRIBUTING.md, SECURITY.md, CI workflow, release automation, README)
+- Authentication: Basic Auth and OIDC client credentials; multi-engine support (multiple named Operaton endpoints, one default)
+- Professional documentation: polished README, configuration guide, GitHub community health files
 
 ### Out of Scope (MVP)
 
@@ -97,7 +102,6 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 
 - Autonomous/proactive process monitoring and alerting (AI-initiated, not user-initiated)
 - BPMN generation and natural language → BPMN authoring
-- Multi-engine support (connecting to multiple Operaton instances simultaneously)
 - Prompt templates and guided scenario workflows
 - Process optimization recommendations
 - Any UI, dashboard, or web interface
@@ -106,7 +110,6 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 
 - Intelligence layer: bottleneck detection, anomaly surfacing, process duration analysis
 - BPMN authoring: natural language → BPMN generation → deploy workflow
-- Multi-engine support (connect to multiple Operaton instances)
 - Prompt templates / guided workflows for common operational scenarios
 
 ### Vision (Future)
@@ -209,6 +212,22 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 
 ---
 
+### Journey 6: Marcus — The Process Operator (Planned Migration)
+
+**Persona:** Marcus (returning from Journey 1 and 2) has just deployed v2 of the order-fulfilment process, which fixes a routing bug introduced in v1. 200 active process instances are still running on v1. He needs to migrate them to v2 during tonight's maintenance window without disrupting instances that are mid-task.
+
+**Opening Scene:** Marcus knows migration is possible via the Operaton API but has never done it at this scale. His concern: some instances are currently waiting on external tasks (a payment confirmation step) and he doesn't want to break those. He also knows some instances are mid-timer and needs to understand the impact before touching anything.
+
+**Rising Action:** Marcus asks the AI to *"find all active order-fulfilment instances on v1 that can be migrated to v2."* The AI calls the discovery tool and returns 200 eligible instances, flagging 12 that have active call activities in flight — those child instances are out of scope and need separate handling. He asks the AI to *"generate and validate a migration plan from v1 to v2."* The validation response surfaces: 8 instances with open external tasks at `Task_PaymentConfirmation` (workers mid-processing), and confirms that the activity cancellation instruction on `Task_LegacyApproval` will affect 34 instances currently waiting at that step.
+
+**Climax:** Marcus decides to exclude the 8 external-task instances for now and proceed with the remaining 192. He asks the AI to *"execute the migration for the eligible 192 instances."* The AI submits the async batch (auto-chunked into two batches of 96), returns the batch IDs, and begins polling. After 4 minutes, all batches complete: 189 succeeded, 3 failed with exhausted retries. Marcus asks the AI to *"retry the 3 failed instances."* The AI resets their retries, Operaton picks them up, and they complete within the next polling cycle.
+
+**Resolution:** Marcus asks for a post-migration summary — 192 migrated successfully, 8 held back for manual external-task drain, 12 flagged for subprocess handling in a follow-up. He also pulls the audit log entry to attach to his deployment sign-off ticket. The migration that would have required careful API crafting and manual batch tracking is done through a conversation, with full consequence visibility before a single instance was touched.
+
+*Reveals requirements for: migration discovery with blocking condition flags (FR-43), migration candidate analysis (FR-44), migration plan generation (FR-45), plan validation with consequence disclosure — timers, external tasks, cancellation impact (FR-46), async batch execution with auto-chunking and migration instructions (FR-47), batch awaiting with COMPLETED/TIMEOUT distinction (FR-49), batch status polling (FR-50), per-instance failure retrieval with EXHAUSTED_RETRIES (FR-51), failed job retry (FR-52), post-migration summary report (FR-55), audit log access (FR-56).*
+
+---
+
 ### Journey Requirements Summary (MVP)
 
 *Note: Journey 3 (Sofia) requirements map to Growth-phase features and are excluded from the MVP capability table below.*
@@ -232,6 +251,12 @@ The following are explicitly deferred to Growth or Vision phases and are not par
 | JReleaser config + auto-changelog | Lena J5 |
 | Release workflow (preliminary/final/dry-run) + npm provenance | Lena J5 |
 | README tool groups + out-of-scope section | Lena J5 |
+| Process instance migration discovery with blocking condition flags | Marcus J6 |
+| Migration plan generation and validation with consequence disclosure | Marcus J6 |
+| Async batch migration execution with auto-chunking and migration instructions | Marcus J6 |
+| Batch monitoring, await, failure retrieval, and failed job retry | Marcus J6 |
+| Batch suspend/resume and cancellation | Marcus J6 |
+| Post-migration summary report and audit log access | Marcus J6 |
 
 ## Setup Requirements
 
@@ -373,6 +398,38 @@ All FRs below apply to MVP scope. Write/mutating operations (marked **W**) must 
 
 **FR-35 (W/R):** Users can evaluate a deployed decision table by decision definition key, supplying input variables; the server returns the evaluation result or a structured error if evaluation fails.
 
+### Process Instance Migration
+
+**FR-43 (R):** Users can discover process instances eligible for migration by supplying a process definition key, optional source/target version range, state, and business key pattern; results include per-instance eligibility status and any blocking conditions (e.g., active call activities whose child instances are outside migration scope).
+
+**FR-44 (R):** Users can retrieve migration candidates for a given source and target process definition ID pair, receiving a structured breakdown of auto-mappable activity pairs versus activities requiring explicit mapping decisions; an optional `requiredVariables` list flags instances missing expected variable names.
+
+**FR-45 (W):** Users can generate a migration plan from a source to a target process definition, receiving auto-generated activity mappings and a list of unmapped activities that require explicit mapping decisions before the plan can be executed.
+
+**FR-46 (R):** Users can validate a migration plan against a full or sample set of process instance IDs; the response includes: typed validation errors, a `sampledValidation: true` flag when a subset is provided, active timer warnings per activity (instances whose timer due dates may be affected by migration), open external task conflicts per activity with affected instance count (workers currently mid-processing), and per-activity cancellation impact counts when activity cancellation instructions are supplied. Validation must reflect the supplied migration instructions — not just the plan mapping in isolation.
+
+**FR-47 (W):** Users can execute an approved migration plan as an asynchronous batch, supplying the plan, a list of process instance IDs, optional migration instructions (explicit named activity cancellations and typed variable updates), and an optional `batchSize` for chunking; the server auto-chunks the instance set if it exceeds `batchSize` and returns an array of batch IDs with per-chunk instance counts. Migration is irreversible and one-way; the server skips instances already on the target definition version.
+
+**FR-48 (W):** Users can suspend or resume one or more in-progress migration batches by batch ID array; the server returns per-batch confirmation or a structured error for each.
+
+**FR-49 (R):** Users can await completion of one or more migration batches, supplying a timeout in seconds and a polling interval in seconds; the server returns a final aggregate status of `COMPLETED` or `TIMEOUT` with total completed, failed, and pending counts across all supplied batch IDs. A `TIMEOUT` result is not a failure — the batch may still be running; the response includes sufficient progress data for the caller to decide whether to re-attach or abort.
+
+**FR-50 (R):** Users can retrieve the current status of a single migration batch, returning total jobs, jobs created, jobs completed, jobs failed, and suspension state.
+
+**FR-51 (R):** Users can retrieve per-instance failure details from one or more migration batches as a flat deduplicated list, including failure type (including `EXHAUSTED_RETRIES`), job ID, process instance ID, and stacktrace; the list is suitable for constructing retry-safe instance subsets for subsequent recovery operations.
+
+**FR-52 (W):** Users can reset retries on all failed migration jobs within one or more batches, allowing the engine to resume processing the failed instances without resubmitting the full batch; the server returns confirmation or a structured error.
+
+**FR-53 (R):** Users can list active migration batches, optionally filtered by suspension state; results include batch ID, total jobs, completion progress, and creation time.
+
+**FR-54 (W):** Users can delete (cancel) one or more migration batches by batch ID array; the server returns per-batch confirmation or a structured error for each.
+
+**FR-55 (R):** Users can retrieve an aggregated post-migration summary for one or more batch IDs, including total instances submitted, total succeeded, total failed, failure breakdown by error type, and total duration; the report aggregates across all chunks of a chunked migration submission.
+
+**FR-56 (R):** Users can list audit entries for migration operations from the Operaton User Operation Log, optionally filtered by process definition key and date range; results include operator ID, timestamp, operation type, source and target definition identifiers, and outcome.
+
+**FR-57 (R):** Users can list completed migration batches from the Operaton historic batch log, optionally filtered by state or date range; results include batch ID, total jobs, completion status, start time, and end time. Complements FR-53 (active batches) for full retrospective visibility after batches are no longer active.
+
 ### Project Infrastructure & Publishing
 
 **FR-36:** All source files in `src/` and `test/` carry the Operaton Apache 2.0 license header with the Operaton copyright notice (`Copyright Operaton contributors, Licensed under the Apache License, Version 2.0`), adapted for TypeScript/JavaScript comment syntax (`//`); CI rejects any PR containing files missing or malformed headers.
@@ -395,7 +452,7 @@ All FRs below apply to MVP scope. Write/mutating operations (marked **W**) must 
 ## Non-Functional Requirements
 
 **NFR-01 — Write Operation Reliability:**
-All mutating tool calls (deploy, start, suspend, resume, delete, complete, claim, unclaim, retry, resolve, create, update) return either explicit success confirmation or a structured error message containing the error type, cause, and recommended corrective action where applicable. Zero silent failures permitted.
+All mutating tool calls (deploy, start, suspend, resume, delete, complete, claim, unclaim, retry, resolve, create, update, migration execute, migration batch suspend/resume/delete/retry) return either explicit success confirmation or a structured error message containing the error type, cause, and recommended corrective action where applicable. Zero silent failures permitted.
 *Measurement: Integration test suite covers error paths for all FRs; verified by automated test run against a live Operaton instance.*
 
 **NFR-02 — Read Accuracy:**
