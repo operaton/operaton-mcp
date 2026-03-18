@@ -76,6 +76,12 @@ const ERROR_MAP: Record<string, ErrorEntry> = {
 };
 
 function resolveHint(errorType: string, message: string): string {
+  // Defensive check: ensure message is a valid string before regex matching
+  if (!message || typeof message !== "string") {
+    return (ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"]).hint;
+  }
+
+  // Dynamic hints based on error message patterns
   if (
     (errorType === "InvalidRequestException" ||
       errorType === "UserAlreadyExistsException") &&
@@ -93,6 +99,7 @@ function resolveHint(errorType: string, message: string): string {
     return "The user is not a member of this group";
   }
 
+  // Fall back to static hints from ERROR_MAP
   return (ERROR_MAP[errorType] ?? ERROR_MAP["__unknown__"]).hint;
 }
 

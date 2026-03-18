@@ -40,7 +40,11 @@ function extractErrorMessage(error: unknown): string {
     }
   }
 
-  return String(error);
+  try {
+    return String(error);
+  } catch {
+    return "[Unknown error]";
+  }
 }
 
 async function parseResponseBody(response: Response): Promise<unknown | null> {
@@ -124,6 +128,9 @@ export function createOperatonClient(
       const errorBody = await parseResponseBody(response);
       return normalize(errorBody) as McpToolError;
     }
+    if (response.status === 204) {
+      return null;
+    }
     return parseResponseBody(response);
   }
 
@@ -151,6 +158,9 @@ export function createOperatonClient(
     if (!response.ok) {
       const errorBody = await parseResponseBody(response);
       return normalize(errorBody) as McpToolError;
+    }
+    if (response.status === 204) {
+      return null;
     }
     return parseResponseBody(response);
   }
