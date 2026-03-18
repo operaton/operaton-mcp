@@ -5,13 +5,13 @@ MCP server for the [Operaton](https://operaton.org) BPM REST API — exposes 300
 ## Install & Run
 
 ```bash
-npx operaton-mcp
+npx @operaton/operaton-mcp
 ```
 
 Or install globally:
 
 ```bash
-npm install -g operaton-mcp
+npm install -g @operaton/operaton-mcp
 operaton-mcp
 ```
 
@@ -36,7 +36,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/operaton-mcp"],
       "env": {
         "OPERATON_BASE_URL": "http://localhost:8080/engine-rest",
         "OPERATON_USERNAME": "demo",
