@@ -8,11 +8,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    env:
-      OPERATON_SKIP_HEALTH_CHECK: 'true'
-      OPERATON_BASE_URL: 'http://localhost:8080/engine-rest'
-      OPERATON_USERNAME: 'demo'
-      OPERATON_PASSWORD: 'demo'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,4 +23,4 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
       - run: npm run build
-      - run: npm test
+      - run: npm run test:unit && npm run test:smoke

@@ -40,6 +40,7 @@ describe("loadConfig", () => {
     process.env["OPERATON_USERNAME"] = "admin";
     process.env["OPERATON_PASSWORD"] = "admin";
     process.env["OPERATON_ENGINE"] = "my-engine";
+    delete process.env["OPERATON_SKIP_HEALTH_CHECK"];
 
     const config = loadConfig();
 
