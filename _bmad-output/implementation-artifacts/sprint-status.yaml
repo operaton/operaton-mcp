@@ -88,9 +88,9 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 7: Historic Data & Audit
-  epic-7: in-progress
-  7-1-query-historic-process-and-activity-instances: review
-  7-2-query-historic-tasks-and-variables: review
+  epic-7: done
+  7-1-query-historic-process-and-activity-instances: done
+  7-2-query-historic-tasks-and-variables: done
   epic-7-retrospective: optional
 
   # Epic 8: Decision & DMN Management
