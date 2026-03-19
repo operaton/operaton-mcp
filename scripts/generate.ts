@@ -184,10 +184,10 @@ function emitOperationFile(
   const queryString = queryParams.length > 0 ? "?\${params}" : "";
   const clientCall =
     method === "get" || method === "delete"
-      ? `client.${method}(\`/engine/{engineName}${pathTemplate}${queryString}\`)`
+      ? `client.${method}(\`${pathTemplate}${queryString}\`)`
       : hasBody
-        ? `client.${method}(\`/engine/{engineName}${pathTemplate}${queryString}\`, body)`
-        : `client.${method}(\`/engine/{engineName}${pathTemplate}${queryString}\`)`;
+        ? `client.${method}(\`${pathTemplate}${queryString}\`, body)`
+        : `client.${method}(\`${pathTemplate}${queryString}\`)`;
 
   // For POST/PUT with a request body, strip out path params to build the body
   const bodyBlock = hasBody
