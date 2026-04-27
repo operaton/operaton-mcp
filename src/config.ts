@@ -14,6 +14,118 @@
 
 import { readFileSync } from "fs";
 
+// ─── Guard Config ────────────────────────────────────────────────────────────
+
+export type GuardMode = "unrestricted" | "read-only" | "safe";
+export type ResourceDomain =
+  | "process-definitions"
+  | "deployments"
+  | "instances"
+  | "tasks"
+  | "jobs"
+  | "incidents"
+  | "users-groups"
+  | "decisions"
+  | "migrations"
+  | "infrastructure";
+export type OperationClass =
+  | "read"
+  | "create"
+  | "update"
+  | "delete"
+  | "suspend-resume"
+  | "deploy"
+  | "migrate-execute"
+  | "migrate-control";
+
+export const VALID_GUARD_MODES: GuardMode[] = [
+  "unrestricted",
+  "read-only",
+  "safe",
+];
+export const VALID_RESOURCE_DOMAINS: ResourceDomain[] = [
+  "process-definitions",
+  "deployments",
+  "instances",
+  "tasks",
+  "jobs",
+  "incidents",
+  "users-groups",
+  "decisions",
+  "migrations",
+  "infrastructure",
+];
+export const VALID_OP_CLASSES: OperationClass[] = [
+  "read",
+  "create",
+  "update",
+  "delete",
+  "suspend-resume",
+  "deploy",
+  "migrate-execute",
+  "migrate-control",
+];
+
+export interface GuardConfig {
+  mode: GuardMode;
+  denyResources: ResourceDomain[];
+  denyOps: OperationClass[];
+}
+
+export function loadGuardConfig(): GuardConfig {
+  const guardMode = process.env["OPERATON_GUARD"];
+  const denyResourcesRaw = process.env["OPERATON_DENY_RESOURCES"];
+  const denyOpsRaw = process.env["OPERATON_DENY_OPS"];
+
+  let mode: GuardMode = "unrestricted";
+  if (guardMode) {
+    if (!VALID_GUARD_MODES.includes(guardMode as GuardMode)) {
+      console.error(
+        `[operaton-mcp] Invalid OPERATON_GUARD value: "${guardMode}". Valid values: unrestricted, read-only, safe`,
+      );
+      process.exit(1);
+    }
+    mode = guardMode as GuardMode;
+  }
+
+  const denyResources: ResourceDomain[] = [];
+  if (denyResourcesRaw) {
+    for (const entry of denyResourcesRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
+      if (!VALID_RESOURCE_DOMAINS.includes(entry as ResourceDomain)) {
+        console.error(
+          `[operaton-mcp] Invalid OPERATON_DENY_RESOURCES entry: "${entry}". Valid domains: process-definitions, deployments, instances, tasks, jobs, incidents, users-groups, decisions, migrations, infrastructure`,
+        );
+        process.exit(1);
+      }
+      denyResources.push(entry as ResourceDomain);
+    }
+  }
+
+  const denyOps: OperationClass[] = [];
+  if (denyOpsRaw) {
+    for (const entry of denyOpsRaw.split(",").map((s) => s.trim()).filter(Boolean)) {
+      if (!VALID_OP_CLASSES.includes(entry as OperationClass)) {
+        console.error(
+          `[operaton-mcp] Invalid OPERATON_DENY_OPS entry: "${entry}". Valid classes: read, create, update, delete, suspend-resume, deploy, migrate-execute, migrate-control`,
+        );
+        process.exit(1);
+      }
+      denyOps.push(entry as OperationClass);
+    }
+  }
+
+  const isActive = !!guardMode || !!denyResourcesRaw || !!denyOpsRaw;
+  if (isActive) {
+    console.error(
+      `[operaton-mcp] Guard: OPERATON_GUARD=${guardMode ?? ""} OPERATON_DENY_RESOURCES=${denyResourcesRaw ?? ""} OPERATON_DENY_OPS=${denyOpsRaw ?? ""}`,
+    );
+  }
+
+  return { mode, denyResources, denyOps };
+}
+
+// ─── Auth Config ─────────────────────────────────────────────────────────────
+
 export interface BasicAuthConfig {
   type: "basic";
   username: string;
@@ -43,9 +155,11 @@ export interface ResolvedConfig {
   engines: Record<string, EngineConfig>;
   defaultEngine: string;
   skipHealthCheck: boolean;
+  guard: GuardConfig;
 }
 
 export function loadConfig(): ResolvedConfig {
+  const guard = loadGuardConfig();
   const configPath = process.env["OPERATON_CONFIG"];
   const username = process.env["OPERATON_USERNAME"];
   const clientId = process.env["OPERATON_CLIENT_ID"];
@@ -93,7 +207,7 @@ export function loadConfig(): ResolvedConfig {
       process.exit(1);
     }
 
-    return { engines, defaultEngine, skipHealthCheck };
+    return { engines, defaultEngine, skipHealthCheck, guard };
   }
 
   // Ambiguity guard: both USERNAME and CLIENT_ID set
@@ -130,6 +244,7 @@ export function loadConfig(): ResolvedConfig {
       },
       defaultEngine: engineKey,
       skipHealthCheck,
+      guard,
     };
   }
 
@@ -164,6 +279,7 @@ export function loadConfig(): ResolvedConfig {
       },
       defaultEngine: engineKey,
       skipHealthCheck,
+      guard,
     };
   }
 

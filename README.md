@@ -14,6 +14,7 @@
 - **Full REST API coverage** — 300+ operations across process definitions, instances, tasks, jobs, incidents, users, history, and decisions
 - **Multi-engine support** — connect to multiple Operaton instances from a single server
 - **Basic Auth & OIDC** — supports both HTTP Basic authentication and OAuth2 client credentials (OIDC)
+- **Access control guards** — configurable operation guards to restrict what the AI can do (`OPERATON_GUARD`, `OPERATON_DENY_RESOURCES`, `OPERATON_DENY_OPS`)
 - **Zero-setup with npx** — run without installation via `npx operaton-mcp`
 - **Type-safe** — written in TypeScript with strict type checking
 
@@ -80,6 +81,56 @@ Restart Claude Desktop — you're ready to use natural-language commands against
 ```
 
 > For multi-engine deployments, see the [Configuration Guide](docs/configuration.md).
+
+## Access Control Guards
+
+Guards let you constrain what the AI assistant is allowed to do. They are enforced at the MCP dispatch layer — blocked calls never reach Operaton.
+
+### `OPERATON_GUARD` — overall mode
+
+| Value | Effect |
+|---|---|
+| *(unset)* or `unrestricted` | All operations permitted (default) |
+| `read-only` | Only read operations permitted; all mutating calls are blocked |
+| `safe` | Read and reversible mutations permitted; irreversible operations (delete, deploy, migrate-execute) are blocked |
+
+```json
+"env": {
+  "OPERATON_GUARD": "read-only"
+}
+```
+
+### `OPERATON_DENY_RESOURCES` — block specific domains
+
+Comma-separated list of resource domains to deny entirely. Both reads and writes in the named domain are blocked.
+
+Valid domains: `process-definitions`, `deployments`, `instances`, `tasks`, `jobs`, `incidents`, `users-groups`, `decisions`, `migrations`, `infrastructure`
+
+```json
+"env": {
+  "OPERATON_DENY_RESOURCES": "users-groups,decisions"
+}
+```
+
+### `OPERATON_DENY_OPS` — block specific operation classes
+
+Comma-separated list of operation classes to deny regardless of domain.
+
+Valid classes: `read`, `create`, `update`, `delete`, `suspend-resume`, `deploy`, `migrate-execute`, `migrate-control`
+
+```json
+"env": {
+  "OPERATON_DENY_OPS": "delete,deploy"
+}
+```
+
+### Combining guards
+
+All three env vars can be set together. The most restrictive rule that matches a call wins. Precedence: `OPERATON_GUARD` → `OPERATON_DENY_RESOURCES` → `OPERATON_DENY_OPS`.
+
+When a call is blocked, the MCP client receives an `isError` response naming the blocked operation and the guard rule that triggered. The server logs a WARN entry with full detail including a remediation hint.
+
+> **Production tip:** Use `OPERATON_GUARD=safe` to prevent the AI from accidentally deleting definitions or executing migrations while still allowing it to start instances, complete tasks, and manage jobs.
 
 ## Available Tools
 

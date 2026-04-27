@@ -51,6 +51,8 @@ interface ManifestEntry {
   frMapping?: string[];
   examples?: string[];
   parameterOverrides?: Record<string, string>;
+  resourceDomain?: string;
+  operationClass?: string;
 }
 
 interface SpecOperation {
@@ -286,6 +288,8 @@ function emitTopLevelBarrel(
     schema: ${schemaRef},
     handler: (input: z.infer<typeof ${schemaRef}>) => ${group}.${e.operationId}(input, client),
     group: ${JSON.stringify(group)},
+    resourceDomain: ${JSON.stringify(e.entry.resourceDomain ?? "")},
+    operationClass: ${JSON.stringify(e.entry.operationClass ?? "")},
   });`;
     })
     .join("\n");
@@ -303,6 +307,8 @@ function emitTopLevelBarrel(
       schema: ct.schema,
       handler: (input) => ct.handler(input, client),
       group: ct.group,
+      resourceDomain: ct.resourceDomain,
+      operationClass: ct.operationClass,
     });
   }`
     : "";
@@ -315,6 +321,8 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { OperatonClient } from "../http/client.js";
+import type { GuardConfig } from "../config.js";
+import { checkGuard } from "../guard/index.js";
 ${customToolsImport}
 ${groupImports}
 
@@ -323,9 +331,11 @@ interface ToolEntry {
   schema: z.ZodObject<z.ZodRawShape>;
   handler: (input: any) => Promise<{ isError?: boolean; content: Array<{ type: "text"; text: string }> }>;
   group: string;
+  resourceDomain: string;
+  operationClass: string;
 }
 
-export function registerAllTools(server: McpServer, client: OperatonClient): void {
+export function registerAllTools(server: McpServer, client: OperatonClient, guardConfig: GuardConfig): void {
   const tools = new Map<string, ToolEntry>();
 
 ${toolRegistrations}
@@ -365,6 +375,19 @@ ${customToolsMerge}
             text: \`Unknown tool: \${toolName}. Available groups: \${groups.join(", ")}\`,
           },
         ],
+      };
+    }
+    const violation = checkGuard(
+      toolName,
+      tool.resourceDomain as any,
+      tool.operationClass as any,
+      guardConfig,
+    );
+    if (violation) {
+      console.error(violation.warnLog);
+      return {
+        isError: true as const,
+        content: [{ type: "text" as const, text: violation.mcpError }],
       };
     }
     const input = request.params.arguments ?? {};
@@ -452,6 +475,26 @@ async function main(): Promise<void> {
         `[operaton-mcp] generate: WARN — manifest entry "${id}" is missing frMapping key`,
       );
     }
+  }
+
+  // Step 7b — guard metadata assertion (resourceDomain + operationClass required on all entries)
+  for (const [id, entry] of manifestEntries) {
+    if (!entry.resourceDomain) {
+      console.error(
+        `[operaton-mcp] generate: ERROR — manifest entry "${id}" is missing required field: resourceDomain`,
+      );
+      valid = false;
+    }
+    if (!entry.operationClass) {
+      console.error(
+        `[operaton-mcp] generate: ERROR — manifest entry "${id}" is missing required field: operationClass`,
+      );
+      valid = false;
+    }
+  }
+  if (!valid) {
+    console.error("[operaton-mcp] generate: build failed due to missing guard metadata fields");
+    process.exit(1);
   }
 
   // Step 8 — emit

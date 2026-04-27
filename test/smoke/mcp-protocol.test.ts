@@ -39,7 +39,7 @@ describe("MCP Protocol Smoke", () => {
     const operatonClient = createOperatonClient(config);
 
     const server = new McpServer({ name: "operaton-mcp", version: "1.0.0" });
-    registerAllTools(server, operatonClient);
+    registerAllTools(server, operatonClient, config.guard);
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     client = new Client({ name: "test-client", version: "1.0.0" });

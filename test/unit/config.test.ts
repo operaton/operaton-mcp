@@ -16,7 +16,7 @@ import { vi, describe, it, expect, afterEach, beforeEach } from "vitest";
 import { writeFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { loadConfig } from "../../src/config.js";
+import { loadConfig, loadGuardConfig } from "../../src/config.js";
 
 describe("loadConfig", () => {
   const originalEnv = process.env;
@@ -379,5 +379,120 @@ describe("loadConfig", () => {
         expect.stringContaining("Failed to parse config file"),
       );
     });
+  });
+});
+
+describe("loadGuardConfig", () => {
+  const originalEnv = process.env;
+  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+    delete process.env["OPERATON_GUARD"];
+    delete process.env["OPERATON_DENY_RESOURCES"];
+    delete process.env["OPERATON_DENY_OPS"];
+    exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    vi.restoreAllMocks();
+  });
+
+  // ─── Default / empty config ────────────────────────────────────────────────
+
+  it("returns unrestricted defaults when no guard env vars are set (AC: 4)", () => {
+    const config = loadGuardConfig();
+    expect(config.mode).toBe("unrestricted");
+    expect(config.denyResources).toEqual([]);
+    expect(config.denyOps).toEqual([]);
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  // ─── OPERATON_GUARD validation ─────────────────────────────────────────────
+
+  it("accepts OPERATON_GUARD=unrestricted (AC: 4)", () => {
+    process.env["OPERATON_GUARD"] = "unrestricted";
+    const config = loadGuardConfig();
+    expect(config.mode).toBe("unrestricted");
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("accepts OPERATON_GUARD=read-only (AC: 7)", () => {
+    process.env["OPERATON_GUARD"] = "read-only";
+    const config = loadGuardConfig();
+    expect(config.mode).toBe("read-only");
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("accepts OPERATON_GUARD=safe (AC: 7)", () => {
+    process.env["OPERATON_GUARD"] = "safe";
+    const config = loadGuardConfig();
+    expect(config.mode).toBe("safe");
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("exits with descriptive error for invalid OPERATON_GUARD value (AC: 1)", () => {
+    process.env["OPERATON_GUARD"] = "strict";
+    expect(() => loadGuardConfig()).toThrow("process.exit called");
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[operaton-mcp] Invalid OPERATON_GUARD value: "strict". Valid values: unrestricted, read-only, safe',
+    );
+  });
+
+  // ─── OPERATON_DENY_RESOURCES validation ────────────────────────────────────
+
+  it("accepts valid OPERATON_DENY_RESOURCES list (AC: 7)", () => {
+    process.env["OPERATON_DENY_RESOURCES"] = "instances,tasks,jobs";
+    const config = loadGuardConfig();
+    expect(config.denyResources).toEqual(["instances", "tasks", "jobs"]);
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("exits with descriptive error for invalid OPERATON_DENY_RESOURCES entry (AC: 2)", () => {
+    process.env["OPERATON_DENY_RESOURCES"] = "deployments,widgets";
+    expect(() => loadGuardConfig()).toThrow("process.exit called");
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[operaton-mcp] Invalid OPERATON_DENY_RESOURCES entry: "widgets". Valid domains: process-definitions, deployments, instances, tasks, jobs, incidents, users-groups, decisions, migrations, infrastructure',
+    );
+  });
+
+  // ─── OPERATON_DENY_OPS validation ──────────────────────────────────────────
+
+  it("accepts valid OPERATON_DENY_OPS list (AC: 7)", () => {
+    process.env["OPERATON_DENY_OPS"] = "delete,deploy";
+    const config = loadGuardConfig();
+    expect(config.denyOps).toEqual(["delete", "deploy"]);
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("exits with descriptive error for invalid OPERATON_DENY_OPS entry (AC: 3)", () => {
+    process.env["OPERATON_DENY_OPS"] = "delete,invent";
+    expect(() => loadGuardConfig()).toThrow("process.exit called");
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[operaton-mcp] Invalid OPERATON_DENY_OPS entry: "invent". Valid classes: read, create, update, delete, suspend-resume, deploy, migrate-execute, migrate-control',
+    );
+  });
+
+  // ─── INFO log when guard is active ────────────────────────────────────────
+
+  it("emits INFO log when guard config is active (AC: 5)", () => {
+    process.env["OPERATON_GUARD"] = "safe";
+    process.env["OPERATON_DENY_RESOURCES"] = "users-groups";
+    process.env["OPERATON_DENY_OPS"] = "";
+    loadGuardConfig();
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[operaton-mcp] Guard: OPERATON_GUARD=safe OPERATON_DENY_RESOURCES=users-groups OPERATON_DENY_OPS=",
+    );
+  });
+
+  it("does not emit INFO log when no guard env vars are set (AC: 4)", () => {
+    loadGuardConfig();
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });

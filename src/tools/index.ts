@@ -61,6 +61,8 @@ export interface CustomToolEntry {
   group: string;
   schema: z.ZodObject<z.ZodRawShape>;
   handler: (input: Record<string, unknown>, client: OperatonClient) => Promise<{ isError?: boolean; content: Array<{ type: "text"; text: string }> }>;
+  resourceDomain: string;
+  operationClass: string;
 }
 
 export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
@@ -73,6 +75,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: deploymentCreateInputSchema,
       handler: (input, _client) =>
         deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+      resourceDomain: "deployments",
+      operationClass: "deploy",
     },
     {
       name: "processDefinition_deploy",
@@ -82,6 +86,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: deploymentCreateInputSchema,
       handler: (input, _client) =>
         deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+      resourceDomain: "process-definitions",
+      operationClass: "deploy",
     },
     {
       name: "decision_deploy",
@@ -91,6 +97,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: deploymentCreateInputSchema,
       handler: (input, _client) =>
         deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+      resourceDomain: "decisions",
+      operationClass: "deploy",
     },
     // ── Epic 12: Process Instance Migration ────────────────────────────────────
     {
@@ -101,6 +109,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: processInstanceListMigratableInputSchema,
       handler: (input, c) =>
         processInstanceListMigratable(input as z.infer<typeof processInstanceListMigratableInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "processDefinition_getMigrationCandidates",
@@ -110,6 +120,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: processDefinitionGetMigrationCandidatesInputSchema,
       handler: (input, c) =>
         processDefinitionGetMigrationCandidates(input as z.infer<typeof processDefinitionGetMigrationCandidatesInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_generatePlan",
@@ -119,6 +131,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationGeneratePlanInputSchema,
       handler: (input, c) =>
         migrationGeneratePlan(input as z.infer<typeof migrationGeneratePlanInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_validatePlan",
@@ -128,6 +142,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationValidatePlanInputSchema,
       handler: (input, c) =>
         migrationValidatePlan(input as z.infer<typeof migrationValidatePlanInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_executeBatch",
@@ -137,6 +153,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationExecuteBatchInputSchema,
       handler: (input, c) =>
         migrationExecuteBatch(input as z.infer<typeof migrationExecuteBatchInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-execute",
     },
     {
       name: "migration_suspendBatch",
@@ -145,6 +163,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationSuspendBatchInputSchema,
       handler: (input, c) =>
         migrationSuspendBatch(input as z.infer<typeof migrationSuspendBatchInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "suspend-resume",
     },
     {
       name: "migration_resumeBatch",
@@ -153,6 +173,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationResumeBatchInputSchema,
       handler: (input, c) =>
         migrationResumeBatch(input as z.infer<typeof migrationResumeBatchInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "suspend-resume",
     },
     {
       name: "migration_deleteBatch",
@@ -161,6 +183,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationDeleteBatchInputSchema,
       handler: (input, c) =>
         migrationDeleteBatch(input as z.infer<typeof migrationDeleteBatchInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "delete",
     },
     {
       name: "migration_listBatches",
@@ -170,6 +194,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationListBatchesInputSchema,
       handler: (input, c) =>
         migrationListBatches(input as z.infer<typeof migrationListBatchesInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_awaitBatch",
@@ -179,6 +205,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationAwaitBatchInputSchema,
       handler: (input, c) =>
         migrationAwaitBatch(input as z.infer<typeof migrationAwaitBatchInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_getBatchStatus",
@@ -188,6 +216,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationGetBatchStatusInputSchema,
       handler: (input, c) =>
         migrationGetBatchStatus(input as z.infer<typeof migrationGetBatchStatusInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_getBatchFailures",
@@ -197,6 +227,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationGetBatchFailuresInputSchema,
       handler: (input, c) =>
         migrationGetBatchFailures(input as z.infer<typeof migrationGetBatchFailuresInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_retryFailedJobs",
@@ -206,6 +238,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationRetryFailedJobsInputSchema,
       handler: (input, c) =>
         migrationRetryFailedJobs(input as z.infer<typeof migrationRetryFailedJobsInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-execute",
     },
     {
       name: "migration_getBatchSummary",
@@ -215,6 +249,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationGetBatchSummaryInputSchema,
       handler: (input, c) =>
         migrationGetBatchSummary(input as z.infer<typeof migrationGetBatchSummaryInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_listAuditEntries",
@@ -224,6 +260,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationListAuditEntriesInputSchema,
       handler: (input, c) =>
         migrationListAuditEntries(input as z.infer<typeof migrationListAuditEntriesInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
     {
       name: "migration_listHistoricBatches",
@@ -233,6 +271,8 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       schema: migrationListHistoricBatchesInputSchema,
       handler: (input, c) =>
         migrationListHistoricBatches(input as z.infer<typeof migrationListHistoricBatchesInputSchema>, c),
+      resourceDomain: "migrations",
+      operationClass: "migrate-control",
     },
   ];
   void client;

@@ -6,10 +6,12 @@ stepsCompleted:
 inputDocuments:
   - '_bmad-output/planning-artifacts/prd.md'
   - '_bmad-output/planning-artifacts/architecture.md'
-lastEdited: '2026-03-18'
+lastEdited: '2026-04-07'
 editHistory:
   - date: '2026-03-18'
     changes: 'Added FR-43–FR-57 (Process Instance Migration) to Requirements Inventory and FR Coverage Map. Added Epic 12 summary to Epic List. Added Epic 10/11 summary entries to Epic List (previously missing). Added full Epic 12 detailed section with Stories 12.1–12.6 — refined with frMapping ACs, implementation notes on multi-step MCP logic, TIMEOUT test strategy, 12.3+12.4 co-dependency note, test setup dependency for 12.5, dryRun flag and submissionErrors ACs in 12.3, README migration group AC in 12.5, and Story 12.6 (Historic Batch Access) for FR-57.'
+  - date: '2026-04-07'
+    changes: 'Added FR-58–FR-64 (Access Control) to Requirements Inventory and FR Coverage Map. Added Epic 13 summary to Epic List. Added full Epic 13 detailed section with Stories 13.1–13.3. Refined in party mode: 13.2 user story "So that" reworded; added no-guard pass-through AC; remediation hint moved to WARN log only (not in MCP response); precedence AC tightened; generation pipeline enforcement AC added for resourceDomain/operationClass. 13.1: startup-validation integration test (child process spawn) added. 13.3: test matrix restructured into 3 groups (guard mode / domain deny / op-class deny); infrastructure domain fixture gap resolved; parameterized it.each structure specified.'
 ---
 
 # operaton-mcp - Epic Breakdown
@@ -122,6 +124,20 @@ FR-56 (R): Users can list audit entries for migration operations from the Operat
 
 FR-57 (R): Users can list completed migration batches from the Operaton historic batch log, optionally filtered by state or date range; results include batch ID, total jobs, completion status, start time, and end time. Complements FR-53 (active batches) for full retrospective visibility after batches are no longer active.
 
+FR-58 (R/W): The server supports a global operation guard configured via `OPERATON_GUARD`: `unrestricted` (default — all operations permitted), `read-only` (all mutating tool calls blocked), `safe` (irreversible operation classes `deploy`, `delete`, `migrate-execute` blocked; all other mutations permitted).
+
+FR-59 (R/W): The server supports per-resource-domain blocking via `OPERATON_DENY_RESOURCES`; all tool calls (read and write) targeting a denied resource domain return a structured permission error. Domains: `process-definitions`, `deployments`, `instances`, `tasks`, `jobs`, `incidents`, `users-groups`, `decisions`, `migrations`, `infrastructure`.
+
+FR-60 (R/W): The server supports per-operation-class blocking via `OPERATON_DENY_OPS`; any tool call whose operation class appears in the deny list returns a structured permission error regardless of resource domain.
+
+FR-61: Guard configuration is additive and denylist-based: absence of guard config means all operations are permitted. When multiple guard rules apply to a call, the most restrictive rule wins. Precedence: `OPERATON_GUARD` > `OPERATON_DENY_RESOURCES` > `OPERATON_DENY_OPS`.
+
+FR-62: On server startup, all guard configuration values are validated. Any unrecognised `OPERATON_GUARD` value or unrecognised entry in `OPERATON_DENY_RESOURCES` / `OPERATON_DENY_OPS` causes the server to exit immediately with a descriptive error identifying the invalid value and the valid options. The server never starts in an indeterminate guard state.
+
+FR-63: All permission-blocked tool calls return a structured MCP error containing: (1) the blocked operation name, and (2) the guard rule that blocked it. The remediation hint appears only in the server-side WARN log (FR-64), not in the MCP error body. Generic "access denied" messages are not acceptable. Permission errors must propagate to the MCP client response — they must not be silently retried or swallowed.
+
+FR-64: Each permission-blocked tool call attempt is logged server-side at WARN level, including: operation name, resource domain, guard rule triggered, and timestamp. This log is the primary audit trail for AI agent over-reach detection.
+
 ### NonFunctional Requirements
 
 NFR-01 — Write Operation Reliability: All mutating tool calls return either explicit success confirmation or a structured error message containing the error type, cause, and recommended corrective action where applicable. Zero silent failures permitted.
@@ -220,6 +236,13 @@ FR-54: Epic 12 — Delete (cancel) one or more migration batches
 FR-55: Epic 12 — Aggregated post-migration summary report across chunks
 FR-56: Epic 12 — List migration audit entries from Operaton User Operation Log
 FR-57: Epic 12 — List completed migration batches from Operaton historic batch log
+FR-58: Epic 13 — Global operation guard via OPERATON_GUARD (unrestricted / read-only / safe)
+FR-59: Epic 13 — Per-resource-domain blocking via OPERATON_DENY_RESOURCES
+FR-60: Epic 13 — Per-operation-class blocking via OPERATON_DENY_OPS
+FR-61: Epic 13 — Additive denylist precedence rules (OPERATON_GUARD > DENY_RESOURCES > DENY_OPS)
+FR-62: Epic 13 — Startup validation of all guard config values with fail-fast on invalid entries
+FR-63: Epic 13 — Structured MCP permission error with blocked op name and guard rule (remediation hint in WARN log only)
+FR-64: Epic 13 — WARN-level server-side audit log for every permission-blocked call
 
 ## Epic List
 
@@ -317,6 +340,14 @@ Elevates operaton-mcp to a professionally documented open source project with a 
 Operators can discover process instances eligible for migration to newer process definition versions, generate and validate migration plans with full consequence disclosure (timer impacts, external task conflicts, activity cancellations), execute migrations as async batches with auto-chunking, monitor batch progress, recover from partial failures, access post-migration audit records, and query the historic batch log for completed migrations. All operations are scripting-friendly with typed structured outputs and no synchronous execution path.
 
 **FRs covered:** FR-43, FR-44, FR-45, FR-46, FR-47, FR-48, FR-49, FR-50, FR-51, FR-52, FR-53, FR-54, FR-55, FR-56, FR-57
+
+---
+
+### Epic 13: Access Control & Operation Guards
+
+Operators deploying operaton-mcp in production or shared environments can constrain which tool calls the AI is permitted to execute using three composable environment variables: `OPERATON_GUARD` (global mode), `OPERATON_DENY_RESOURCES` (per-domain blocking), and `OPERATON_DENY_OPS` (per-operation-class blocking). The server validates all guard configuration at startup, refusing to start in an indeterminate state. Every blocked call returns a structured, actionable error naming the guard rule and the exact config change needed to permit the operation. All blocked attempts are logged at WARN level for AI over-reach auditing.
+
+**FRs covered:** FR-58, FR-59, FR-60, FR-61, FR-62, FR-63, FR-64
 
 ---
 
@@ -1685,3 +1716,173 @@ so that I can verify migration history after batches are no longer visible in th
 **Then** all pass; tests cover: listing all historic batches, state filtering, date range filtering, and cross-referencing a batch created in Story 12.3 tests
 
 **Implementation Note:** Thin wrapper over `GET /history/batch` with `type=MIGRATE_PROCESS_INSTANCE` filter applied by default to restrict results to migration batches only.
+
+---
+
+## Epic 13: Access Control & Operation Guards
+
+Operators deploying operaton-mcp in production or shared environments can constrain which tool calls the AI is permitted to execute using three composable environment variables. The server validates all guard configuration at startup and blocks tool calls that violate configured rules, returning structured, actionable errors. All blocked attempts are logged at WARN level.
+
+### Story 13.1: Guard Config Schema & Startup Validation
+
+As an operator deploying operaton-mcp in a shared or production environment,
+I want the server to validate all guard-related environment variables at startup and refuse to start with an invalid configuration,
+So that misconfigured guards are caught immediately and the server never runs in an indeterminate access control state.
+
+**Acceptance Criteria:**
+
+**Given** `OPERATON_GUARD` is set to an unrecognised value (e.g., `"strict"`)
+**When** the server starts
+**Then** it exits immediately with `[operaton-mcp] Invalid OPERATON_GUARD value: "strict". Valid values: unrestricted, read-only, safe` and a non-zero exit code (FR-62)
+
+**Given** `OPERATON_DENY_RESOURCES` contains an unrecognised domain (e.g., `"deployments,widgets"`)
+**When** the server starts
+**Then** it exits immediately with `[operaton-mcp] Invalid OPERATON_DENY_RESOURCES entry: "widgets". Valid domains: process-definitions, deployments, instances, tasks, jobs, incidents, users-groups, decisions, migrations, infrastructure` (FR-62)
+
+**Given** `OPERATON_DENY_OPS` contains an unrecognised operation class (e.g., `"delete,invent"`)
+**When** the server starts
+**Then** it exits immediately with `[operaton-mcp] Invalid OPERATON_DENY_OPS entry: "invent". Valid classes: read, create, update, delete, suspend-resume, deploy, migrate-execute, migrate-control` (FR-62)
+
+**Given** `OPERATON_GUARD`, `OPERATON_DENY_RESOURCES`, and `OPERATON_DENY_OPS` are all absent or empty
+**When** the server starts
+**Then** it starts successfully with no guard-related log output; all operations are permitted (FR-61 — unrestricted default)
+
+**Given** all guard env vars contain valid values
+**When** the server starts
+**Then** it logs the active guard configuration at INFO level: `[operaton-mcp] Guard: OPERATON_GUARD=safe OPERATON_DENY_RESOURCES=users-groups OPERATON_DENY_OPS=` and proceeds normally
+
+**Given** `src/config.ts` is reviewed after this story
+**When** checking guard config parsing
+**Then** guard config parsing (OPERATON_GUARD, OPERATON_DENY_RESOURCES, OPERATON_DENY_OPS) is handled exclusively in `src/config.ts` alongside existing env var loading; no other file reads these env vars directly
+
+**Given** unit tests for guard config validation are run
+**When** `npm test` executes
+**Then** tests pass covering: valid OPERATON_GUARD values (all 3), invalid OPERATON_GUARD value, valid domain list, invalid domain entry, valid op-class list, invalid op-class entry, empty/absent config (unrestricted default)
+
+**Given** the server is spawned as a child process with an invalid guard env var (e.g., `OPERATON_GUARD=strict`)
+**When** the process exits
+**Then** the exit code is non-zero and stderr contains the expected descriptive error message (startup validation confirmed as an integration-level test; does not require a live Operaton instance)
+
+### Story 13.2: Guard Enforcement Middleware
+
+As an operator who has configured access guards,
+I want every tool call to be checked against the configured guard rules before any HTTP request is made to Operaton,
+So that I can confidently deploy the MCP server in production or shared environments knowing the AI is constrained to the operations I have authorised.
+
+**Acceptance Criteria:**
+
+**Given** no guard env vars are set
+**When** any tool call is received
+**Then** the call passes through the guard layer without a permission check and proceeds normally; no guard-related overhead or log output occurs (FR-61 — unrestricted default)
+
+**Given** `OPERATON_GUARD=read-only` is set and a mutating tool call is attempted (e.g., `processInstance_start`)
+**When** the tool call is received
+**Then** `isError: true` is returned with a structured error: `"Operation 'processInstance_start' is blocked by OPERATON_GUARD=read-only (blocks all mutating operations)."` No HTTP request to Operaton is made. The WARN log includes the remediation hint: `To permit: set OPERATON_GUARD=unrestricted or safe`. (FR-58, FR-63, FR-64)
+
+**Given** `OPERATON_GUARD=safe` is set and an irreversible tool call is attempted (e.g., `processDefinition_delete`, `deployment_create`, `migration_executeBatch`)
+**When** the tool call is received
+**Then** `isError: true` is returned with: `"Operation 'processDefinition_delete' is blocked by OPERATON_GUARD=safe (blocks irreversible op class: delete)."` No HTTP request to Operaton is made. WARN log includes remediation. (FR-58, FR-63, FR-64)
+
+**Given** `OPERATON_GUARD=safe` is set and a reversible mutating tool call is attempted (e.g., `processInstance_setSuspension`)
+**When** the tool call is received
+**Then** the call proceeds normally; no permission error is returned (FR-58 — safe mode permits reversible mutations)
+
+**Given** `OPERATON_DENY_RESOURCES=users-groups` is set and any tool in the users-groups domain is called (e.g., `user_create`, `user_list`, `group_create`)
+**When** the tool call is received
+**Then** `isError: true` is returned with: `"Operation 'user_create' is blocked by OPERATON_DENY_RESOURCES (domain: users-groups is denied)."` WARN log includes remediation. (FR-59, FR-63, FR-64)
+
+**Given** `OPERATON_DENY_OPS=delete` is set and a delete-class tool is called (e.g., `processDefinition_deleteById`)
+**When** the tool call is received
+**Then** `isError: true` is returned with: `"Operation 'processDefinition_deleteById' is blocked by OPERATON_DENY_OPS (op class: delete is denied)."` WARN log includes remediation. (FR-60, FR-63, FR-64)
+
+**Given** both `OPERATON_GUARD=safe` and `OPERATON_DENY_OPS=suspend-resume` are set and a suspend tool is called
+**When** the tool call is received
+**Then** `isError: true` is returned citing `OPERATON_DENY_OPS=suspend-resume` as the blocking rule — `OPERATON_GUARD=safe` would permit this reversible op, but `OPERATON_DENY_OPS` is more restrictive; the most restrictive rule always wins (FR-61 — precedence: OPERATON_GUARD > DENY_RESOURCES > DENY_OPS; all rules evaluated, blocking rule in error is the one that triggered)
+
+**Given** a permission-blocked tool call is attempted
+**When** the call is processed
+**Then** a WARN-level log entry is emitted: `[operaton-mcp] WARN: Blocked '{operationName}' | domain: {domain} | op-class: {opClass} | guard rule: {rule} | remediation: {hint} | ts: {timestamp}` (FR-64)
+
+**Given** the guard enforcement implementation is reviewed
+**When** checking the middleware location
+**Then** enforcement logic lives in `src/guard/index.ts` (or equivalent); each tool handler does NOT contain inline guard checks — the guard is applied at the dispatch layer before handler invocation
+
+**Given** a manifest entry is missing the `resourceDomain` or `operationClass` field
+**When** `npm run generate` executes
+**Then** the generation pipeline fails with a descriptive error identifying the manifest entry and the missing field — consistent with how absent `frMapping` is handled (guard metadata is required, not optional)
+
+**Given** unit tests for guard enforcement are run
+**When** `npm test` executes
+**Then** tests pass covering: no-guard pass-through, OPERATON_GUARD=read-only blocks mutating op, OPERATON_GUARD=safe blocks irreversible op classes (deploy/delete/migrate-execute), OPERATON_GUARD=safe permits reversible mutation, OPERATON_DENY_RESOURCES blocks read + write in denied domain, OPERATON_DENY_OPS blocks specific op class, precedence (DENY_OPS wins over GUARD=safe for reversible op), MCP error format contains op name + blocking rule only (no remediation), WARN log contains full detail including remediation
+
+**Implementation Note:** Each tool in the manifest must carry two new metadata fields: `resourceDomain` (one of the 10 valid domain strings) and `operationClass` (one of the 7 valid class strings from the PRD classification table). The guard middleware reads these fields from the manifest entry for the called tool name. Add fields to all existing manifest entries in a single pass as part of this story. The generation pipeline (`scripts/generate.ts`) must assert presence of both fields — a manifest entry without them is a build error.
+
+### Story 13.3: Guard Integration Tests
+
+As a quality-conscious operator,
+I want a structured integration test matrix that covers all three guard modes, all resource domains, and all operation classes against a live Operaton instance,
+So that guard enforcement is verified end-to-end and regressions are caught by CI without an unbounded or fragile test run.
+
+**Test structure:** Three independent test groups, each with its own server spawn. Tests skip if `OPERATON_BASE_URL` is unset.
+
+---
+
+**Group A — Guard Mode Tests (3 scenarios)**
+
+**Given** the server starts with `OPERATON_GUARD=unrestricted` (or no guard config)
+**When** one representative call per op class is made (read, create, delete, deploy, suspend-resume, migrate-execute, migrate-control)
+**Then** all 7 calls succeed without a permission error
+
+**Given** the server starts with `OPERATON_GUARD=read-only`
+**When** one representative mutating call is made (e.g., `processInstance_start`) and one read call (e.g., `processInstance_list`)
+**Then** the mutating call returns `isError: true` citing `OPERATON_GUARD=read-only`; the read call succeeds
+
+**Given** the server starts with `OPERATON_GUARD=safe`
+**When** one irreversible call (e.g., `processDefinition_delete`) and one reversible mutation (e.g., `processInstance_setSuspension`) are made
+**Then** the irreversible call returns `isError: true` citing `OPERATON_GUARD=safe`; the reversible mutation succeeds
+
+---
+
+**Group B — Domain Deny Tests (10 domains, parameterized)**
+
+**Given** the server starts with `OPERATON_DENY_RESOURCES={domain}` for each of the 10 valid domains
+**When** the cheapest available read call and cheapest available write call for that domain are made
+**Then** both return `isError: true` citing the correct `OPERATON_DENY_RESOURCES={domain}` rule; a call against a different domain succeeds unaffected
+
+*Domain read fixture map (cheapest read per domain):*
+- `process-definitions` → `processDefinition_list`
+- `deployments` → `deployment_list`
+- `instances` → `processInstance_list`
+- `tasks` → `task_list`
+- `jobs` → `job_list`
+- `incidents` → `incident_list`
+- `users-groups` → `user_list`
+- `decisions` → `decision_list`
+- `migrations` → `migration_listBatches`
+- `infrastructure` → `deployment_count` (no read-only infrastructure tool exists; use write-block test only: `deployment_create` blocked, `processInstance_list` unaffected)
+
+---
+
+**Group C — Op-Class Deny Tests (7 op classes, parameterized)**
+
+**Given** the server starts with `OPERATON_DENY_OPS={opClass}` for each of the 7 valid op classes
+**When** one representative tool for that op class is called
+**Then** the call returns `isError: true` citing `OPERATON_DENY_OPS={opClass}`; a call of a different op class on the same resource succeeds
+
+*Representative tool per op class:*
+- `read` → `processInstance_list`
+- `create` → `user_create`
+- `update` → `task_update`
+- `delete` → `processDefinition_deleteById`
+- `suspend-resume` → `processInstance_setSuspension`
+- `deploy` → `deployment_create`
+- `migrate-execute` → `migration_executeBatch` (may require minimal plan fixture)
+- `migrate-control` → `migration_generatePlan`
+
+---
+
+**Given** `frMapping` is reviewed for all manifest entries after Story 13.2 annotation
+**When** `npm run generate` is run
+**Then** the pipeline completes without errors; all entries carry valid `resourceDomain` and `operationClass`; entries covering FR-58–FR-64 carry `frMapping` entries
+
+**Implementation Note:** Each group runs in its own `describe` block with a server spawned via `beforeAll` and torn down via `afterAll`. Groups B and C use `it.each` over their domain/op-class arrays. A shared `beforeAll` in Group B deploys a minimal fixture process definition used as the target for domain-specific calls; `afterAll` deletes it. Startup-validation integration test lives in Story 13.1 — not here.

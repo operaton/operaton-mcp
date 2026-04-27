@@ -18,7 +18,7 @@ classification:
   complexity: medium
   projectContext: greenfield
 date: '2026-03-16'
-lastEdited: '2026-03-18'
+lastEdited: '2026-04-01'
 editHistory:
   - date: '2026-03-17'
     changes: 'Added FR section (individual-operation level), NFR section, Setup Requirements section; fixed Success Criteria measurability; added Out of Scope; labeled Journey 3 as Growth-phase'
@@ -26,6 +26,8 @@ editHistory:
     changes: 'Added FR-36–FR-42 (Project Infrastructure & Publishing): license headers with Operaton copyright, CONTRIBUTING.md with license header + conventional commit scopes, SECURITY.md, CI workflow with commitlint + .nvmrc, JReleaser config, release workflow with preliminary/final/dry-run modes + npm provenance, README tool groups + out-of-scope section. Added NFR-07 (release workflow dry-run fidelity). Added Journey 5 (Lena — OSS Contributor/Maintainer) with two arcs revealing FR-36–FR-42. Updated Journey Requirements Summary table. Tightened FR-40 wording. Restructured FR-41 as compound FR with (a)/(b)/(c) sub-bullets. Post-validation fixes: added infra line to MVP scope; updated stale FR counts in NFR-01/NFR-03; removed actions/setup-node leakage from FR-39.'
   - date: '2026-03-18'
     changes: 'Added FR-43–FR-57 (Process Instance Migration): discovery, migration candidate analysis, plan generation, plan validation with consequence disclosure, async batch execution with auto-chunking and dryRun flag, batch suspend/resume, batch awaiting, batch status, per-instance failure retrieval, failed job retry, batch listing, batch deletion, post-migration summary report, audit log access, historic batch access. Added Journey 6 (Marcus — Planned Migration). Updated Journey Requirements Summary table. Updated NFR-01 to include migration operations. Added migration to MVP scope.'
+  - date: '2026-04-01'
+    changes: 'Added configurable AI guardrail access control (3-tier env var scheme): FR-58–FR-64 (Access Control subsection) with operation classification table, OPERATON_GUARD global mode (unrestricted/read-only/safe), OPERATON_DENY_RESOURCES per-domain blocking, OPERATON_DENY_OPS per-operation-class blocking, denylist semantics with explicit precedence rules, startup validation, structured permission error format with unlocking hints, server-side WARN logging of blocked attempts. Added NFR-08 (Operation Guard Enforcement). Extended FR-42 (README guard config examples). Updated Setup Requirements configuration table. Added AI guardrail sentence to Executive Summary and Technical Success Criteria. Added operation guard to MVP scope.'
 ---
 
 # Product Requirements Document - operaton-mcp
@@ -38,6 +40,8 @@ editHistory:
 operaton-mcp is an MCP (Model Context Protocol) server that exposes the complete Operaton REST API as AI-callable tools. It enables AI assistants and agents to perform the full range of Operaton engine operations — process deployment, instance management, task interaction, incident handling, job control, user/group administration, and historical data queries — without restriction. The target users are engineers and operations teams who run Operaton-powered workflow automation and want to manage, monitor, and evolve their process landscapes through AI tooling rather than partial web UIs or manual API calls.
 
 The two primary use cases are: (1) **Operations** — querying live state, claiming and completing tasks, managing incidents, resuming suspended jobs, detecting bottlenecks; and (2) **Authoring** — describing a process in natural language, having AI generate and deploy the BPMN, then iterating on it. Together, they make Operaton fully controllable through conversational AI.
+
+A configurable operation guard allows operators to constrain what an AI agent may do — enforcing read-only access, blocking irreversible operations, or restricting access to specific resource domains — without modifying client configuration.
 
 ### What Makes This Special
 
@@ -71,6 +75,7 @@ Operaton's REST API is comprehensive and well-documented, but no existing tool e
 - **Read operations:** Data is current and accurate; minor edge cases (e.g., eventual consistency windows) are acceptable, but stale or incorrect data in normal operation is not
 - Compatible with major MCP-capable AI clients (Claude Desktop, Copilot, etc.)
 - No user-specific session state stored between requests; each tool call is self-contained using only the configured Operaton connection
+- Over-privileged AI agent access is preventable via server-side operation guard configuration, without requiring changes to the AI client
 
 ### Measurable Outcomes
 
@@ -94,6 +99,7 @@ Full Operaton REST API surface as MCP tools, organized by domain:
 - Decisions & DMN (deploy, evaluate)
 - Project infrastructure & publishing tooling (license headers, CONTRIBUTING.md, SECURITY.md, CI workflow, release automation, README)
 - Authentication: Basic Auth and OIDC client credentials; multi-engine support (multiple named Operaton endpoints, one default)
+- Configurable operation guard: read-only mode, irreversible-action restriction, per-resource-domain deny; default all-allowed
 - Professional documentation: polished README, configuration guide, GitHub community health files
 
 ### Out of Scope (MVP)
@@ -284,6 +290,11 @@ All connection parameters are supplied via environment variables; no credentials
 | `OPERATON_USERNAME` | Yes | Operaton user with API access |
 | `OPERATON_PASSWORD` | Yes | Corresponding password |
 | `OPERATON_ENGINE` | No | Engine name if non-default (default: `default`) |
+| `OPERATON_GUARD` | No | Global operation guard mode: `unrestricted` (default), `read-only` (block all mutating ops), `safe` (block irreversible ops only) |
+| `OPERATON_DENY_RESOURCES` | No | Comma-separated list of resource domains to block entirely: `process-definitions`, `deployments`, `instances`, `tasks`, `jobs`, `incidents`, `users-groups`, `decisions`, `migrations`, `infrastructure` |
+| `OPERATON_DENY_OPS` | No | Comma-separated list of operation classes to block: `read`, `create`, `update`, `delete`, `suspend-resume`, `deploy`, `migrate-execute`, `migrate-control` |
+
+Guard configuration is global (applies to all configured engines). Invalid values for `OPERATON_GUARD` or unrecognised entries in `OPERATON_DENY_RESOURCES` / `OPERATON_DENY_OPS` cause the server to refuse to start with a descriptive error. Precedence: `OPERATON_GUARD` > `OPERATON_DENY_RESOURCES` > `OPERATON_DENY_OPS`; the most restrictive rule always applies.
 
 ### MCP Client Registration
 
@@ -398,6 +409,38 @@ All FRs below apply to MVP scope. Write/mutating operations (marked **W**) must 
 
 **FR-35 (W/R):** Users can evaluate a deployed decision table by decision definition key, supplying input variables; the server returns the evaluation result or a structured error if evaluation fails.
 
+### Access Control
+
+**Operation Guard Classification**
+
+Each MCP tool is classified by mutation type and reversibility. Classification is based on engine state mutation — not workflow intent. The following table defines the authoritative classification used by the guard system:
+
+| Operation Class | Examples | Irreversible? |
+|---|---|---|
+| Read | list, get, query, count, stats, stacktrace, audit log | No |
+| Create/Update | user create/update, task create/update, variables set | No |
+| Suspend/Resume | instance/job suspend, resume, batch suspend/resume | No |
+| Deploy | process definition deploy, DMN deploy | Yes |
+| Delete | process definition delete, deployment delete, instance delete, user delete, group delete, batch delete | Yes |
+| Migrate-Execute | migration batch execute | Yes |
+| Migrate-Control | migration plan generate/validate, batch await, failure retrieval, retry | No |
+
+*Classification rule: `migrate_validatePlan` and `migration_generatePlan` are Read (no state change). `deployment_create` / deploy operations are irreversible (persistent state). `processInstance_setSuspension` is reversible (can be undone).*
+
+**FR-58 (R/W):** The server supports a global operation guard configured via `OPERATON_GUARD`: `unrestricted` (default — all operations permitted), `read-only` (all mutating tool calls blocked), `safe` (irreversible operation classes `deploy`, `delete`, `migrate-execute` blocked; all other mutations permitted).
+
+**FR-59 (R/W):** The server supports per-resource-domain blocking via `OPERATON_DENY_RESOURCES`; all tool calls (read and write) targeting a denied resource domain return a structured permission error. Domains map to the FR groupings: `process-definitions`, `deployments`, `instances`, `tasks`, `jobs`, `incidents`, `users-groups`, `decisions`, `migrations`, `infrastructure`.
+
+**FR-60 (R/W):** The server supports per-operation-class blocking via `OPERATON_DENY_OPS`; any tool call whose operation class appears in the deny list returns a structured permission error regardless of resource domain.
+
+**FR-61:** Guard configuration is additive and denylist-based: absence of guard config means all operations are permitted. When multiple guard rules apply to a call, the most restrictive rule wins. Precedence: `OPERATON_GUARD` > `OPERATON_DENY_RESOURCES` > `OPERATON_DENY_OPS`.
+
+**FR-62:** On server startup, all guard configuration values are validated. Any unrecognised `OPERATON_GUARD` value or unrecognised entry in `OPERATON_DENY_RESOURCES` / `OPERATON_DENY_OPS` causes the server to exit immediately with a descriptive error identifying the invalid value and the valid options. The server never starts in an indeterminate guard state.
+
+**FR-63:** All permission-blocked tool calls return a structured MCP error containing: (1) the blocked operation name, and (2) the guard rule that blocked it (e.g., `OPERATON_GUARD=safe` blocks irreversible ops). The remediation hint (specific env var change required to permit the operation) appears only in the server-side WARN log (FR-64), not in the MCP error body. Generic "access denied" messages are not acceptable. Permission errors must propagate to the end user via the MCP client response — they must not be silently retried or swallowed.
+
+**FR-64:** Each permission-blocked tool call attempt is logged server-side at WARN level, including: operation name, resource domain, guard rule triggered, and timestamp. This log is the primary audit trail for AI agent over-reach detection.
+
 ### Process Instance Migration
 
 **FR-43 (R):** Users can discover process instances eligible for migration by supplying a process definition key, optional source/target version range, state, and business key pattern; results include per-instance eligibility status and any blocking conditions (e.g., active call activities whose child instances are outside migration scope).
@@ -447,7 +490,7 @@ All FRs below apply to MVP scope. Write/mutating operations (marked **W**) must 
 - **(b) Final:** creates a semver git tag, publishes the stable NPM release with provenance attestation (`--provenance`), generates a GitHub Release with changelog, then commits a next-minor version bump (`x.(y+1).0-SNAPSHOT`) back to `main`.
 - **(c) Dry-run:** passes `--dry-run` to JReleaser; produces identical log output to a live run without publishing to NPM, creating GitHub releases, pushing tags, or committing version bumps.
 
-**FR-42:** `README.md` documents all MCP tool groups with a per-group summary of available operations, and includes an explicit out-of-scope section listing Growth and Vision features not available in the current release.
+**FR-42:** `README.md` documents all MCP tool groups with a per-group summary of available operations, includes an explicit out-of-scope section listing Growth and Vision features not available in the current release, and includes a guard configuration section with example env var combinations for common patterns: read-only deployment, safe-mode production, and per-resource restriction.
 
 ## Non-Functional Requirements
 
@@ -474,6 +517,10 @@ All error responses include: error type, the specific cause (e.g., HTTP status a
 **NFR-06 — Configurability:**
 All Operaton connection parameters (base URL, credentials, engine name) are configurable via environment variables. No endpoints, credentials, or engine names are hardcoded. A misconfigured or unreachable connection produces an error that identifies the parameter causing the failure.
 *Measurement: Configuration test matrix covers valid config, wrong URL, wrong credentials, and unreachable host; each produces the correct error response.*
+
+**NFR-08 — Operation Guard Enforcement:**
+All permission-blocked tool calls must: (1) return a structured error with the blocked operation, the triggering guard rule, and the specific env var change to permit it; (2) never partially execute or silently succeed; (3) propagate the error to the end user via the MCP client response. Each blocked attempt is logged server-side at WARN level. Invalid guard configuration values cause immediate server startup failure with a descriptive error; the server never starts in an indeterminate guard state.
+*Measurement: Test matrix covers all three guard modes and all resource domain deny entries; each produces the correct structured error. Startup validation tested with invalid `OPERATON_GUARD` values and unrecognised resource/op-class names. Log output verified for each blocked call type.*
 
 **NFR-07 — Release Workflow Dry-Run Fidelity:**
 Release workflow dry-run mode (`dry_run=true`) produces identical log output and validation results to a live run without mutating any external state (NPM registry, GitHub releases, git tags, repository commits). Dry-run must be executable by any maintainer without credentials for external systems.

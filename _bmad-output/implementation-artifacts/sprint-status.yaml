@@ -1,5 +1,5 @@
 # generated: 2026-03-18
-# last_updated: 2026-03-18 (code review completed, all stories approved)
+# last_updated: 2026-04-07 (code review completed, all stories approved)
 # project: operaton-mcp
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-18
-last_updated: 2026-03-18
+last_updated: 2026-04-07
 project: operaton-mcp
 project_key: NOKEY
 tracking_system: file-system
@@ -134,3 +134,10 @@ development_status:
   12-5-post-migration-reporting: done
   12-6-historic-batch-access: done
   epic-12-retrospective: optional
+
+  # Epic 13: Access Control & Operation Guards
+  epic-13: in-progress
+  13-1-guard-config-schema-and-startup-validation: review
+  13-2-guard-enforcement-middleware: review
+  13-3-guard-integration-tests: review
+  epic-13-retrospective: optional

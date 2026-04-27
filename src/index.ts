@@ -24,7 +24,7 @@ try {
   await checkConnectivity(config);
   const client = createOperatonClient(config);
   const server = new McpServer({ name: "operaton-mcp", version: "1.0.0" });
-  registerAllTools(server, client);
+  registerAllTools(server, client, config.guard);
   await server.connect(new StdioServerTransport());
 } catch (error) {
   console.error("[operaton-mcp] Fatal error:", error);
