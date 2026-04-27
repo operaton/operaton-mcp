@@ -18,3 +18,5 @@ resources/*.prev.json
 operaton-config.json
 *.operaton-config.json
 .mcp.json
+.mcp.json
+.idea/
