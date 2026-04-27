@@ -91,8 +91,8 @@ Guards let you constrain what the AI assistant is allowed to do. They are enforc
 | Value | Effect |
 |---|---|
 | *(unset)* or `unrestricted` | All operations permitted (default) |
-| `read-only` | Only read operations permitted; all mutating calls are blocked |
-| `safe` | Read and reversible mutations permitted; irreversible operations (delete, deploy, migrate-execute) are blocked |
+| `read-only` | Only read operations permitted; all mutating tools are hidden from the AI and blocked if called directly |
+| `safe` | Read and reversible mutations permitted; irreversible operations (delete, deploy, migrate-execute) are hidden from the AI and blocked if called directly |
 
 ```json
 "env": {
@@ -128,7 +128,7 @@ Valid classes: `read`, `create`, `update`, `delete`, `suspend-resume`, `deploy`,
 
 All three env vars can be set together. The most restrictive rule that matches a call wins. Precedence: `OPERATON_GUARD` → `OPERATON_DENY_RESOURCES` → `OPERATON_DENY_OPS`.
 
-When a call is blocked, the MCP client receives an `isError` response naming the blocked operation and the guard rule that triggered. The server logs a WARN entry with full detail including a remediation hint.
+Guards are enforced at two layers. Forbidden tools are **hidden from the tool list** — the AI never sees them and cannot propose their use. If a forbidden tool is called directly despite being absent from the list, the call-time guard rejects it as a second line of defence. When a call is blocked, the MCP client receives an `isError` response naming the blocked operation and the guard rule that triggered. The server logs a WARN entry with full detail including a remediation hint.
 
 > **Production tip:** Use `OPERATON_GUARD=safe` to prevent the AI from accidentally deleting definitions or executing migrations while still allowing it to start instances, complete tasks, and manage jobs.
 

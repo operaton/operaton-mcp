@@ -346,7 +346,9 @@ ${customToolsMerge}
   server.server.registerCapabilities({ tools: {} });
 
   server.server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: [...tools.entries()].map(([name, t]) => {
+    tools: [...tools.entries()]
+      .filter(([name, t]) => !checkGuard(name, t.resourceDomain as any, t.operationClass as any, guardConfig))
+      .map(([name, t]) => {
       const jsonSchema = zodToJsonSchema(t.schema as any) as Record<string, any>;
       return {
         name,
