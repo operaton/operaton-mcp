@@ -58,7 +58,7 @@
     "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
+    "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^20.5.0",
     "@types/node": "^25.5.0",
     "msw": "^2.12.13",
