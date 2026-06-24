@@ -60,7 +60,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
-    "@types/node": "^25.5.0",
+    "@types/node": "^26.0.0",
     "msw": "^2.12.13",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.19.0",
