@@ -11,11 +11,9 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "ignoreDeprecations": "6.0",
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
-      "@generated/*": ["src/generated/*"]
+      "@generated/*": ["./src/generated/*"]
     }
   },
   "include": ["src/**/*"],
