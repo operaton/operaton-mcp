@@ -26,6 +26,12 @@ jobs:
       contents: write   # push tags, create releases, push version bump commit
       id-token: write   # npm provenance attestation
     steps:
+      - name: Require main branch for real releases
+        if: '!inputs.dry_run && github.ref != ''refs/heads/main'''
+        run: |
+          echo "::error::Real releases must run from main (got $GITHUB_REF). Use dry_run for other branches."
+          exit 1
+
       - name: Require npm OTP for real releases
         if: '!inputs.dry_run'
         env:
