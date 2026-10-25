@@ -14,6 +14,10 @@ on:
         description: 'Dry run (no external mutations)'
         type: boolean
         default: false
+      otp:
+        description: 'npm one-time password (required unless dry run)'
+        type: string
+        required: false
 
 jobs:
   release:
@@ -22,6 +26,17 @@ jobs:
       contents: write   # push tags, create releases, push version bump commit
       id-token: write   # npm provenance attestation
     steps:
+      - name: Require npm OTP for real releases
+        if: '!inputs.dry_run'
+        env:
+          NPM_OTP: ${{ inputs.otp }}
+        run: |
+          if [ -z "$NPM_OTP" ]; then
+            echo "::error::Input 'otp' is required unless dry_run is enabled"
+            exit 1
+          fi
+          echo "::add-mask::$NPM_OTP"
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -56,9 +71,10 @@ jobs:
 
       - name: Publish to NPM (next dist-tag)
         if: inputs.release_type == 'preliminary' && !inputs.dry_run
-        run: npm publish --tag next --provenance
+        run: npm publish --tag next --provenance --otp "$NPM_OTP"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_OTP: ${{ inputs.otp }}
 
       - name: Publish to NPM (dry run)
         if: inputs.release_type == 'preliminary' && inputs.dry_run
@@ -109,9 +125,10 @@ jobs:
 
       - name: Publish to NPM (latest dist-tag, with provenance)
         if: inputs.release_type == 'final' && !inputs.dry_run
-        run: npm publish --provenance
+        run: npm publish --provenance --otp "$NPM_OTP"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_OTP: ${{ inputs.otp }}
 
       - name: Publish to NPM (dry run)
         if: inputs.release_type == 'final' && inputs.dry_run
