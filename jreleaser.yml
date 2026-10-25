@@ -1,6 +1,10 @@
 project:
   name: operaton-mcp
   description: MCP server exposing the complete Operaton REST API as AI-callable tools
+  copyright: Operaton contributors
+  license: Apache-2.0
+  authors:
+    - Operaton contributors
   links:
     homepage: https://github.com/operaton/operaton-mcp
 
