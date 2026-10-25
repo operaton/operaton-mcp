@@ -12,13 +12,14 @@ stepsCompleted:
   - step-e-03-edit
 inputDocuments: []
 workflowType: 'prd'
+workflow: 'edit'
 classification:
   projectType: developer_tool
   domain: general
   complexity: medium
   projectContext: greenfield
 date: '2026-03-16'
-lastEdited: '2026-04-01'
+lastEdited: '2026-04-02'
 editHistory:
   - date: '2026-03-17'
     changes: 'Added FR section (individual-operation level), NFR section, Setup Requirements section; fixed Success Criteria measurability; added Out of Scope; labeled Journey 3 as Growth-phase'
@@ -28,6 +29,8 @@ editHistory:
     changes: 'Added FR-43–FR-57 (Process Instance Migration): discovery, migration candidate analysis, plan generation, plan validation with consequence disclosure, async batch execution with auto-chunking and dryRun flag, batch suspend/resume, batch awaiting, batch status, per-instance failure retrieval, failed job retry, batch listing, batch deletion, post-migration summary report, audit log access, historic batch access. Added Journey 6 (Marcus — Planned Migration). Updated Journey Requirements Summary table. Updated NFR-01 to include migration operations. Added migration to MVP scope.'
   - date: '2026-04-01'
     changes: 'Added configurable AI guardrail access control (3-tier env var scheme): FR-58–FR-64 (Access Control subsection) with operation classification table, OPERATON_GUARD global mode (unrestricted/read-only/safe), OPERATON_DENY_RESOURCES per-domain blocking, OPERATON_DENY_OPS per-operation-class blocking, denylist semantics with explicit precedence rules, startup validation, structured permission error format with unlocking hints, server-side WARN logging of blocked attempts. Added NFR-08 (Operation Guard Enforcement). Extended FR-42 (README guard config examples). Updated Setup Requirements configuration table. Added AI guardrail sentence to Executive Summary and Technical Success Criteria. Added operation guard to MVP scope.'
+  - date: '2026-04-02'
+    changes: 'Added configurable tool blocking feature (FR-23–FR-26, NFR-04–NFR-05); added full Functional Requirements section (FR-01–FR-26); added Non-Functional Requirements section (NFR-01–NFR-08); updated Product Scope MVP, Success Criteria, and Executive Summary'
 ---
 
 # Product Requirements Document - operaton-mcp
@@ -45,7 +48,7 @@ A configurable operation guard allows operators to constrain what an AI agent ma
 
 ### What Makes This Special
 
-Operaton's REST API is comprehensive and well-documented, but no existing tool exposes it fully. Cockpit, Tasklist, and similar UIs offer curated, partial windows into the engine. operaton-mcp removes that ceiling entirely: every API capability is accessible, with AI handling the translation from user intent to precise API calls. The core insight is that the capability gap isn't in the engine — it's in accessibility. MCP closes that gap. This also positions operaton-mcp as a first-mover in an unclaimed space: AI-native BPM tooling via the MCP ecosystem.
+Operaton's REST API is comprehensive and well-documented, but no existing tool exposes it fully. Cockpit, Tasklist, and similar UIs offer curated, partial windows into the engine. operaton-mcp removes that ceiling entirely: every API capability is accessible, with AI handling the translation from user intent to precise API calls. Operators can restrict the callable tool set at deployment time via environment configuration for environments where limiting AI-accessible operations is required. The core insight is that the capability gap isn't in the engine — it's in accessibility. MCP closes that gap. This also positions operaton-mcp as a first-mover in an unclaimed space: AI-native BPM tooling via the MCP ecosystem.
 
 ## Project Classification
 
@@ -97,6 +100,7 @@ Full Operaton REST API surface as MCP tools, organized by domain:
 - Users & groups (create, update, delete, query, membership)
 - Historic data (process instances, activity instances, task history, variable history)
 - Decisions & DMN (deploy, evaluate)
+- Configurable tool blocking: operators restrict AI-callable tools via `OPERATON_MCP_BLOCKED_TOOLS` env var using per-tool names and/or pre-defined category aliases (`read-only`, `safe-ops`, `no-bulk`); blocked tools are not registered at startup and are invisible to AI clients
 - Project infrastructure & publishing tooling (license headers, CONTRIBUTING.md, SECURITY.md, CI workflow, release automation, README)
 - Authentication: Basic Auth and OIDC client credentials; multi-engine support (multiple named Operaton endpoints, one default)
 - Configurable operation guard: read-only mode, irreversible-action restriction, per-resource-domain deny; default all-allowed
@@ -525,3 +529,89 @@ All permission-blocked tool calls must: (1) return a structured error with the b
 **NFR-07 — Release Workflow Dry-Run Fidelity:**
 Release workflow dry-run mode (`dry_run=true`) produces identical log output and validation results to a live run without mutating any external state (NPM registry, GitHub releases, git tags, repository commits). Dry-run must be executable by any maintainer without credentials for external systems.
 *Measurement: Dry-run executed against every release workflow change as part of PR review; confirmed no external mutations by verifying NPM registry and GitHub release state are unchanged after run.*
+
+## Functional Requirements
+
+### Process Definitions & Deployments
+
+- **FR-01:** Users can deploy BPMN process definitions to the Operaton engine; deployment accepts a BPMN XML payload and returns the resulting deployment ID and process definition key.
+- **FR-02:** Users can list all deployed process definitions, filtered by key, name, or version.
+- **FR-03:** Users can retrieve the full details and BPMN XML of a specific process definition by ID or key.
+- **FR-04:** Users can delete a process definition by ID, with optional cascade to running instances.
+
+### Process Instances
+
+- **FR-05:** Users can start a process instance by process definition key or ID, with optional initial variables.
+- **FR-06:** Users can query active process instances filtered by definition key, business key, variable values, or incident state.
+- **FR-07:** Users can suspend and resume individual or multiple process instances by definition key or instance ID.
+- **FR-08:** Users can delete a process instance by ID with a mandatory reason string; the reason is passed to the Operaton API.
+- **FR-09:** Users can read and write process instance variables by instance ID.
+
+### Tasks
+
+- **FR-10:** Users can query user tasks filtered by assignee, candidate group, process instance ID, or due date range.
+- **FR-11:** Users can claim, unclaim, complete, and delegate user tasks by task ID.
+- **FR-12:** Users can read and write task-local variables by task ID.
+
+### Jobs & Job Definitions
+
+- **FR-13:** Users can query jobs filtered by process instance ID, job definition ID, retries remaining, or failed state.
+- **FR-14:** Users can execute, suspend, resume, and set retry counts on individual jobs by job ID.
+- **FR-15:** Users can query and update job definitions (suspend, resume, set overriding priority) by job definition ID.
+
+### Incidents
+
+- **FR-16:** Users can query incidents filtered by process instance ID, incident type, or activity ID.
+- **FR-17:** Users can resolve an incident by ID.
+
+### Users & Groups
+
+- **FR-18:** Users can create, update, delete, and query Operaton users and groups.
+- **FR-19:** Users can add and remove users from groups by user ID and group ID.
+
+### Historic Data
+
+- **FR-20:** Users can query historic process instances, activity instances, task history, and variable history with filters matching their active-data counterparts.
+
+### Decisions & DMN
+
+- **FR-21:** Users can deploy DMN decision tables to the Operaton engine.
+- **FR-22:** Users can evaluate a deployed decision by decision key, passing input variables and receiving the decision output.
+
+### Configurable Tool Blocking
+
+- **FR-23:** Operators restrict which MCP tools are registered by setting `OPERATON_MCP_BLOCKED_TOOLS` to a comma-separated list of tool names and/or pre-defined category aliases; the value is read once at server startup.
+- **FR-24:** Blocked tools are not registered with the MCP server; they are absent from the tool list returned to AI clients and cannot be called.
+- **FR-25:** The server validates `OPERATON_MCP_BLOCKED_TOOLS` at startup; any unrecognized tool name or category alias causes immediate startup failure with an error message identifying the invalid entry.
+- **FR-26:** Pre-defined category aliases expand to deterministic tool sets:
+  - `read-only` — blocks all write/mutating tools (start, create, update, delete, complete, claim, suspend, resume, resolve, execute)
+  - `safe-ops` — blocks destructive tools only (delete process instance, delete process definition, delete user, delete group)
+  - `no-bulk` — blocks operations that apply changes to multiple resources in a single call (bulk suspend, bulk resume, bulk retry)
+
+## Non-Functional Requirements
+
+### Reliability
+
+- **NFR-01:** Write/mutating tool calls validate all required input parameters before executing the Operaton REST API call; validation failures return a descriptive error to the AI client without making any API call.
+- **NFR-02:** Any Operaton REST API error on a mutating operation is returned to the AI client with the HTTP status code, endpoint, and error message; no silent failures or partial state corruption.
+
+### Correctness
+
+- **NFR-03:** Read tool calls return data as returned by the Operaton REST API without value transformation; field names and types match the Operaton API response schema.
+
+### Configuration & Fail-Closed Behaviour
+
+- **NFR-04:** An invalid `OPERATON_MCP_BLOCKED_TOOLS` value (unrecognized tool name or category alias) causes server startup failure; the process exits with a non-zero code and the error message identifies the specific invalid value.
+- **NFR-05:** `OPERATON_MCP_BLOCKED_TOOLS` is evaluated once at server startup; runtime changes to the environment variable have no effect without a server restart.
+
+### Compatibility
+
+- **NFR-06:** The server implements the MCP protocol version compatible with Claude Desktop, GitHub Copilot, and other mainstream MCP-capable AI clients available at time of release.
+
+### Statelessness
+
+- **NFR-07:** The server maintains no persistent state beyond the Operaton engine connection configuration (`OPERATON_BASE_URL`, credentials); all process and task state is held exclusively in the Operaton engine.
+
+### Error Clarity
+
+- **NFR-08:** Misconfiguration (unreachable engine, invalid credentials, missing required env vars) produces a descriptive error at startup or on the first tool call; the error identifies the configuration field and provides actionable remediation guidance (e.g., "OPERATON_BASE_URL is not set — set it to the base URL of your Operaton REST API").
