@@ -2,10 +2,10 @@
 
 > MCP server exposing the full Operaton BPMN/DMN REST API to AI assistants
 
-[![npm version](https://img.shields.io/npm/v/@operaton/operaton-mcp)](https://www.npmjs.com/package/@operaton/operaton-mcp)
+[![npm version](https://img.shields.io/npm/v/@operaton/mcp)](https://www.npmjs.com/package/@operaton/mcp)
 [![CI](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/operaton/operaton-mcp/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Node.js](https://img.shields.io/node/v/@operaton/operaton-mcp)](https://nodejs.org)
+[![Node.js](https://img.shields.io/node/v/@operaton/mcp)](https://nodejs.org)
 
 [Operaton](https://operaton.org) is an open-source BPMN and DMN workflow engine. **operaton-mcp** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes 300+ Operaton REST API operations as MCP tools, enabling AI assistants like Claude to interact directly with your workflow engine — deploying processes, managing instances, handling tasks, and querying history.
 
@@ -15,7 +15,7 @@
 - **Multi-engine support** — connect to multiple Operaton instances from a single server
 - **Basic Auth & OIDC** — supports both HTTP Basic authentication and OAuth2 client credentials (OIDC)
 - **Access control guards** — configurable operation guards to restrict what the AI can do (`OPERATON_GUARD`, `OPERATON_DENY_RESOURCES`, `OPERATON_DENY_OPS`)
-- **Zero-setup with npx** — run without installation via `npx operaton-mcp`
+- **Zero-setup with npx** — run without installation via `npx @operaton/mcp`
 - **Type-safe** — written in TypeScript with strict type checking
 
 ## Quick Start
@@ -29,7 +29,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/mcp"],
       "env": {
         "OPERATON_BASE_URL": "http://localhost:8080/engine-rest",
         "OPERATON_USERNAME": "demo",
@@ -68,7 +68,7 @@ Restart Claude Desktop — you're ready to use natural-language commands against
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/mcp"],
       "env": {
         "OPERATON_BASE_URL": "https://operaton.example.com/engine-rest",
         "OPERATON_CLIENT_ID": "mcp-client",
