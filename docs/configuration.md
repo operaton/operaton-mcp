@@ -32,7 +32,7 @@ Claude Desktop config (`claude_desktop_config.json`):
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/mcp"],
       "env": {
         "OPERATON_BASE_URL": "http://localhost:8080/engine-rest",
         "OPERATON_USERNAME": "demo",
@@ -52,7 +52,7 @@ For Operaton instances secured with an OIDC/OAuth2 identity provider (e.g., Keyc
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/mcp"],
       "env": {
         "OPERATON_BASE_URL": "https://operaton.example.com/engine-rest",
         "OPERATON_CLIENT_ID": "mcp-client",
@@ -102,7 +102,7 @@ Save this file (e.g., `~/operaton-config.json`) and reference it via `OPERATON_C
   "mcpServers": {
     "operaton": {
       "command": "npx",
-      "args": ["-y", "operaton-mcp"],
+      "args": ["-y", "@operaton/mcp"],
       "env": {
         "OPERATON_CONFIG": "/Users/yourname/operaton-config.json"
       }
