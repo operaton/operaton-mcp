@@ -60,6 +60,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish to NPM (dry run)
+        if: inputs.release_type == 'preliminary' && inputs.dry_run
+        run: npm publish --tag next --provenance --dry-run
+
       - name: Create pre-release via JReleaser
         if: inputs.release_type == 'preliminary' && !inputs.dry_run
         uses: jreleaser/release-action@v2
@@ -67,9 +71,7 @@ jobs:
           arguments: full-release
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ env.SNAPSHOT_VERSION }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: JReleaser dry-run (preliminary)
         if: inputs.release_type == 'preliminary' && inputs.dry_run
@@ -78,9 +80,7 @@ jobs:
           arguments: full-release --dry-run
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ env.SNAPSHOT_VERSION }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # ── Final release ────────────────────────────────────────────────────────
 
@@ -113,6 +113,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish to NPM (dry run)
+        if: inputs.release_type == 'final' && inputs.dry_run
+        run: npm publish --provenance --dry-run
+
       - name: Create release via JReleaser
         if: inputs.release_type == 'final' && !inputs.dry_run
         uses: jreleaser/release-action@v2
@@ -120,9 +124,7 @@ jobs:
           arguments: full-release
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ env.VERSION }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: JReleaser dry-run (final)
         if: inputs.release_type == 'final' && inputs.dry_run
@@ -131,9 +133,7 @@ jobs:
           arguments: full-release --dry-run
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ env.VERSION }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Bump to next minor SNAPSHOT
         if: inputs.release_type == 'final' && !inputs.dry_run
