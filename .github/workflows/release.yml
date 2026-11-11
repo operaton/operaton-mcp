@@ -71,6 +71,23 @@ jobs:
           fi
           echo "SNAPSHOT_VERSION=$SNAPSHOT_VERSION" >> "$GITHUB_ENV"
 
+      - name: Get version for final release
+        if: inputs.release_type == 'final'
+        run: |
+          RAW_VERSION=$(node -p "require('./package.json').version")
+          VERSION=${RAW_VERSION%-SNAPSHOT}
+          echo "RAW_VERSION=$RAW_VERSION" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Set stable version
+        if: inputs.release_type == 'final'
+        run: |
+          if [ "$RAW_VERSION" != "$VERSION" ]; then
+            npm version "$VERSION" --no-git-tag-version
+          fi
+
+      # Pack only after the release version is set: JReleaser expects
+      # {{projectName}}-{{projectVersion}}.tgz with the final version
       - name: Pack release artifact
         if: inputs.release_type == 'preliminary' || inputs.release_type == 'final'
         run: npm pack
@@ -105,21 +122,6 @@ jobs:
           JRELEASER_PROJECT_VERSION: ${{ env.SNAPSHOT_VERSION }}
 
       # ── Final release ────────────────────────────────────────────────────────
-
-      - name: Get version for final release
-        if: inputs.release_type == 'final'
-        run: |
-          RAW_VERSION=$(node -p "require('./package.json').version")
-          VERSION=${RAW_VERSION%-SNAPSHOT}
-          echo "RAW_VERSION=$RAW_VERSION" >> "$GITHUB_ENV"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-
-      - name: Set stable version
-        if: inputs.release_type == 'final'
-        run: |
-          if [ "$RAW_VERSION" != "$VERSION" ]; then
-            npm version "$VERSION" --no-git-tag-version
-          fi
 
       - name: Create and push semver tag
         if: inputs.release_type == 'final' && !inputs.dry_run
