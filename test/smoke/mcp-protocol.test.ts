@@ -78,6 +78,26 @@ describe("MCP Protocol Smoke", () => {
     expect(toolNames).toContain("decision_deploy");
   });
 
+  it("tools/list exposes parameter properties and required fields in inputSchema", async () => {
+    const result = await client.listTools();
+    const tool = result.tools.find((t) => t.name === "processInstance_get");
+    expect(tool).toBeDefined();
+    expect(tool!.inputSchema.type).toBe("object");
+    expect(tool!.inputSchema.properties).toHaveProperty("id");
+    expect(tool!.inputSchema.required).toEqual(["id"]);
+  });
+
+  it("tools/list only returns empty properties for passthrough tools", async () => {
+    const result = await client.listTools();
+    // Tools without declared parameters accept an arbitrary body; every other tool
+    // must advertise its parameters (regression guard for #106)
+    const emptyNonPassthrough = result.tools
+      .filter((t) => Object.keys(t.inputSchema.properties ?? {}).length === 0)
+      .filter((t) => t.inputSchema.additionalProperties === undefined || t.inputSchema.additionalProperties === false)
+      .map((t) => t.name);
+    expect(emptyNonPassthrough).toEqual([]);
+  });
+
   it("tools/call supports the processDefinition_deploy alias", async () => {
     const result = await client.callTool({
       name: "processDefinition_deploy",
