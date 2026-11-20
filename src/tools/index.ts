@@ -19,6 +19,8 @@ import type { OperatonClient } from "../http/client.js";
 import {
   deploymentCreate,
   deploymentCreateInputSchema,
+  decisionDeploy,
+  decisionDeployInputSchema,
 } from "./deployment.js";
 import {
   processInstanceListMigratable,
@@ -94,9 +96,9 @@ export function getCustomTools(client: OperatonClient): CustomToolEntry[] {
       description:
         "Deploy a DMN decision artifact to Operaton. Provide DMN XML, a .dmn filename, and a deployment name. Returns deployment metadata and deployed decision definition keys.",
       group: "decision",
-      schema: deploymentCreateInputSchema,
+      schema: decisionDeployInputSchema,
       handler: (input, _client) =>
-        deploymentCreate(input as z.infer<typeof deploymentCreateInputSchema>, _client),
+        decisionDeploy(input as z.infer<typeof decisionDeployInputSchema>, _client),
       resourceDomain: "decisions",
       operationClass: "deploy",
     },

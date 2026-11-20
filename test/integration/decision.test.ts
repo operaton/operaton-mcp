@@ -24,8 +24,9 @@ import { evaluateDecisionByKey } from "../../src/generated/decision/evaluateDeci
 // Minimal DMN: age-based eligibility decision table
 const ELIGIBILITY_DMN = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:operaton="http://operaton.org/schema/1.0/dmn"
              id="eligibility" name="Eligibility" namespace="http://test">
-  <decision id="eligibility-decision" name="Eligibility Decision">
+  <decision id="eligibility-decision" name="Eligibility Decision" operaton:historyTimeToLive="P1D">
     <decisionTable id="dt1" hitPolicy="FIRST">
       <input id="input1" label="Age">
         <inputExpression id="expr1" typeRef="integer"><text>age</text></inputExpression>

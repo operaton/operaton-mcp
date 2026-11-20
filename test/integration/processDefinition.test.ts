@@ -26,8 +26,9 @@ import { deleteProcessDefinition } from "../../src/generated/processDefinition/d
 
 const TEST_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:operaton="http://operaton.org/schema/1.0/bpmn"
                   targetNamespace="http://test">
-  <bpmn:process id="test-process" name="Test Process" isExecutable="true">
+  <bpmn:process id="test-process" name="Test Process" isExecutable="true" operaton:historyTimeToLive="P1D">
     <bpmn:startEvent id="start"/>
     <bpmn:endEvent id="end"/>
     <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="end"/>

@@ -171,6 +171,33 @@ describe("createOperatonClient — basic auth", () => {
   });
 });
 
+describe("createOperatonClient — postMultipart", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("sends text fields as values and files as parts with filename", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "dep-1" }), { status: 200 }),
+    );
+    const xml = "<definitions/>";
+
+    const client = createOperatonClient(basicConfig);
+    const result = await client.postMultipart("/engine/{engineName}/deployment/create", {
+      fields: { "deployment-name": "x" },
+      files: [{ name: "p.bpmn", filename: "p.bpmn", content: xml }],
+    });
+
+    expect(result).toEqual({ id: "dep-1" });
+    const form = (fetchSpy.mock.calls[0]![1] as RequestInit).body as FormData;
+    expect(form.get("deployment-name")).toBe("x");
+    const file = form.get("p.bpmn");
+    expect(file).toBeInstanceOf(File);
+    expect((file as File).name).toBe("p.bpmn");
+    expect(await (file as File).text()).toBe(xml);
+  });
+});
+
 describe("createOperatonClient — OIDC auth", () => {
   afterEach(() => {
     vi.restoreAllMocks();

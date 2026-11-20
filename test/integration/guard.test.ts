@@ -46,8 +46,7 @@ async function createMcpPair(guardConfig: GuardConfig): Promise<{
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const mcpClient = new Client({ name: "test-client", version: "1.0.0" });
-  await mcpClient.connect(clientTransport);
-  await server.connect(serverTransport);
+  await Promise.all([server.connect(serverTransport), mcpClient.connect(clientTransport)]);
 
   const callTool = async (name: string, args: Record<string, unknown> = {}): Promise<ToolCallResult> => {
     const result = await mcpClient.callTool({ name, arguments: args });
