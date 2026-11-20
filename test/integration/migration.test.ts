@@ -42,8 +42,9 @@ const skip = !process.env["OPERATON_BASE_URL"];
 
 const V1_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:operaton="http://operaton.org/schema/1.0/bpmn"
                   targetNamespace="http://migration-test">
-  <bpmn:process id="migration-test-process" name="Migration Test v1" isExecutable="true">
+  <bpmn:process id="migration-test-process" name="Migration Test v1" isExecutable="true" operaton:historyTimeToLive="P1D">
     <bpmn:startEvent id="start"/>
     <bpmn:userTask id="task-review" name="Review"/>
     <bpmn:endEvent id="end"/>
@@ -54,8 +55,9 @@ const V1_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 
 const V2_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:operaton="http://operaton.org/schema/1.0/bpmn"
                   targetNamespace="http://migration-test">
-  <bpmn:process id="migration-test-process" name="Migration Test v2" isExecutable="true">
+  <bpmn:process id="migration-test-process" name="Migration Test v2" isExecutable="true" operaton:historyTimeToLive="P1D">
     <bpmn:startEvent id="start"/>
     <bpmn:userTask id="task-review" name="Review (Updated)"/>
     <bpmn:serviceTask id="task-notify" name="Notify"/>

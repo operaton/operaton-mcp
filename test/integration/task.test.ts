@@ -30,9 +30,10 @@ import { getTaskVariables } from "../../src/generated/task/getTaskVariables.js";
 
 const TASK_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:operaton="http://operaton.org/schema/1.0/bpmn"
                   xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
                   targetNamespace="http://test">
-  <bpmn:process id="test-task-process" name="Test Task Process" isExecutable="true">
+  <bpmn:process id="test-task-process" name="Test Task Process" isExecutable="true" operaton:historyTimeToLive="P1D">
     <bpmn:startEvent id="start"/>
     <bpmn:userTask id="approval" name="Approval Task">
       <bpmn:extensionElements>
