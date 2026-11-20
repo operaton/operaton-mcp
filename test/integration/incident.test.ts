@@ -27,9 +27,10 @@ import { getIncidents } from "../../src/generated/incident/getIncidents.js";
 // BPMN with a failing service task — job will fail on execution creating an incident
 const INCIDENT_BPMN = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:operaton="http://operaton.org/schema/1.0/bpmn"
                   xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
                   targetNamespace="http://test">
-  <bpmn:process id="test-incident-process" name="Test Incident Process" isExecutable="true">
+  <bpmn:process id="test-incident-process" name="Test Incident Process" isExecutable="true" operaton:historyTimeToLive="P1D">
     <bpmn:startEvent id="start"/>
     <bpmn:serviceTask id="failingTask" name="Failing Task"
                       camunda:class="org.nonexistent.FailingDelegate"/>
