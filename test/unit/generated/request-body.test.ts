@@ -21,6 +21,7 @@ import { pathToFileURL } from "url";
 import { z } from "zod";
 import { jsonSchemaToZod, type JsonSchema } from "../../../scripts/json-schema-to-zod.js";
 import type { OperatonClient } from "../../../src/http/client.js";
+import { advertisedProperties } from "../../../src/tool-schema.js";
 
 const ROOT = join(__dirname, "../../..");
 
@@ -103,7 +104,7 @@ describe("generated tools model request bodies (#114)", () => {
 
   it("decision_evaluate types variables as a map of typed values", async () => {
     const json = await jsonSchemaOf("evaluateDecisionByKey");
-    const variables = json.properties.variables;
+    const variables = advertisedProperties(json.properties).variables as Record<string, any>;
     expect(variables.type).toBe("object");
     expect(variables.additionalProperties.properties).toHaveProperty("value");
     expect(variables.additionalProperties.properties).toHaveProperty("type");
@@ -132,6 +133,36 @@ describe("generated tools model request bodies (#114)", () => {
     expect(json.properties.id.type).toBe("string");
     expect(json.required).toContain("id");
     expect(json.properties).toHaveProperty("name");
+  });
+
+  it("task_update still accepts null to clear a nullable top-level field", async () => {
+    const { updateTaskInputSchema } = await import("../../../src/generated/task/updateTask.js");
+    expect(updateTaskInputSchema.parse({ id: "t1", assignee: null })).toEqual({ id: "t1", assignee: null });
+  });
+
+  it("tools/list advertises nullable top-level body fields with their plain type", async () => {
+    const { McpServer } = await import("@modelcontextprotocol/sdk/server/mcp.js");
+    const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+    const { InMemoryTransport } = await import("@modelcontextprotocol/sdk/inMemory.js");
+    const { registerAllTools } = await import("../../../src/generated/index.js");
+
+    const server = new McpServer({ name: "t", version: "1.0.0" });
+    registerAllTools(server, mockClient(), { mode: "unrestricted", denyResources: [], denyOps: [] } as never);
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const mcp = new Client({ name: "t", version: "1.0.0" });
+    await Promise.all([server.connect(serverTransport), mcp.connect(clientTransport)]);
+
+    const { tools } = await mcp.listTools();
+    const props = (name: string) =>
+      tools.find((t) => t.name === name)!.inputSchema.properties as Record<string, Record<string, unknown>>;
+    expect(props("decision_evaluate")["variables"]!.type).toBe("object");
+    expect(props("task_update")["assignee"]!.type).toBe("string");
+    for (const tool of tools) {
+      for (const [name, prop] of Object.entries(tool.inputSchema.properties ?? {})) {
+        expect((prop as Record<string, unknown>).anyOf, `${tool.name}.${name}`).toBeUndefined();
+      }
+    }
+    await mcp.close();
   });
 
   it("passes undeclared body fields through", async () => {

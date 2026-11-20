@@ -210,9 +210,7 @@ function emitOperationFile(
         .map(([name, property]) => {
           const optional = bodyShape!.required.includes(name) ? "" : ".optional()";
           const description = bodyFieldDescription(property.schema.description);
-          // Top-level fields drop `nullable`: an anyOf [T, null] tool schema makes clients guess the type
-          const schema = { ...property.schema, nullable: false };
-          return `  ${propKey(name)}: ${jsonSchemaToZod(schema, components, 1, property.seen)}${optional}${description},`;
+          return `  ${propKey(name)}: ${jsonSchemaToZod(property.schema, components, 1, property.seen)}${optional}${description},`;
         });
   const schemaFields = [...paramFields, ...bodyFields].join("\n");
   const pathTemplate = specOp.path.replace(
@@ -348,6 +346,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { OperatonClient } from "../http/client.js";
 import type { GuardConfig } from "../config.js";
 import { checkGuard } from "../guard/index.js";
+import { advertisedProperties } from "../tool-schema.js";
 ${customToolsImport}
 ${groupImports}
 
@@ -380,7 +379,7 @@ ${customToolsMerge}
         description: t.description,
         inputSchema: {
           type: "object" as const,
-          properties: jsonSchema.properties ?? {},
+          properties: advertisedProperties(jsonSchema.properties ?? {}),
           ...(jsonSchema.required && { required: jsonSchema.required }),
           ...Object.fromEntries(
             Object.entries(jsonSchema).filter(([key]) => !["type", "properties", "required"].includes(key))
