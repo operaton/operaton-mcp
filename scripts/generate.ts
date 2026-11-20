@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { LICENSE_HEADER } from "./license-header.js";
+import { jsonSchemaToZod, resolveObjectShape, type JsonSchema } from "./json-schema-to-zod.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,13 +35,14 @@ interface OpenApiParameter {
 interface OpenApiOperation {
   operationId: string;
   parameters?: OpenApiParameter[];
-  requestBody?: unknown;
+  requestBody?: { content?: Record<string, { schema?: JsonSchema }> };
   summary?: string;
   description?: string;
 }
 
 interface OpenApiSpec {
   paths: Record<string, Record<string, OpenApiOperation>>;
+  components?: { schemas?: Record<string, JsonSchema> };
 }
 
 interface ManifestEntry {
@@ -60,6 +62,8 @@ interface SpecOperation {
   method: string;
   parameters: OpenApiParameter[];
   hasRequestBody: boolean;
+  /** JSON request body schema; undefined for multipart or body-less operations. */
+  requestBodySchema?: JsonSchema;
 }
 
 // ── Step 1: Parse spec ───────────────────────────────────────────────────────
@@ -78,11 +82,17 @@ function parseSpec(specPath: string): Map<string, SpecOperation> {
           (p) => p.in === "path" || p.in === "query",
         ),
         hasRequestBody: !!op.requestBody,
+        requestBodySchema: op.requestBody?.content?.["application/json"]?.schema,
       });
     }
   }
 
   return ops;
+}
+
+function loadComponents(specPath: string): Record<string, JsonSchema> {
+  const spec = JSON.parse(readFileSync(specPath, "utf8")) as OpenApiSpec;
+  return spec.components?.schemas ?? {};
 }
 
 // ── Step 2: Spec diff ────────────────────────────────────────────────────────
@@ -156,6 +166,14 @@ function zodType(schema?: { type?: string; format?: string; items?: { type?: str
   }
 }
 
+/** First paragraph of a spec description, capped so tools/list stays compact. */
+function bodyFieldDescription(description?: string): string {
+  if (!description) return "";
+  const firstParagraph = description.split(/\n\s*\n/)[0]!.replace(/\s+/g, " ").trim();
+  const text = firstParagraph.length > 300 ? `${firstParagraph.slice(0, 297)}...` : firstParagraph;
+  return `.describe(${JSON.stringify(text)})`;
+}
+
 // ── Step 8: Emit files ───────────────────────────────────────────────────────
 
 function emitOperationFile(
@@ -163,6 +181,7 @@ function emitOperationFile(
   operationId: string,
   entry: ManifestEntry,
   specOp: SpecOperation,
+  components: Record<string, JsonSchema>,
 ): void {
   const group = entry.tags[0] ?? "misc";
   const groupDir = join(outDir, group);
@@ -173,12 +192,27 @@ function emitOperationFile(
   const queryParams = params.filter((p) => p.in === "query");
 
   const allParams = [...pathParams, ...queryParams];
-  const schemaFields = allParams
-    .map((p) => `  ${propKey(p.name)}: ${zodType(p.schema, p.in === "path")},`)
-    .join("\n");
+  const paramFields = allParams.map((p) => `  ${propKey(p.name)}: ${zodType(p.schema, p.in === "path")},`);
 
   const method = specOp.method.toLowerCase();
   const hasBody = specOp.hasRequestBody && method !== "get" && method !== "delete";
+
+  // Object bodies are flattened into the input next to the params; anything else
+  // (arrays, untyped) is exposed as a single `body` field.
+  const bodySchema = hasBody ? specOp.requestBodySchema : undefined;
+  const bodyShape = bodySchema ? resolveObjectShape(bodySchema, components) : null;
+  const wrappedBody = bodySchema !== undefined && bodyShape === null;
+  const paramNames = new Set(allParams.map((p) => p.name));
+  const bodyFields = wrappedBody
+    ? [`  body: ${jsonSchemaToZod(bodySchema, components)}.describe("Request body"),`]
+    : Object.entries(bodyShape?.properties ?? {})
+        .filter(([name]) => !paramNames.has(name))
+        .map(([name, property]) => {
+          const optional = bodyShape!.required.includes(name) ? "" : ".optional()";
+          const description = bodyFieldDescription(property.schema.description);
+          return `  ${propKey(name)}: ${jsonSchemaToZod(property.schema, components, 1, property.seen)}${optional}${description},`;
+        });
+  const schemaFields = [...paramFields, ...bodyFields].join("\n");
   const pathTemplate = specOp.path.replace(
     /{([^}]+)}/g,
     (_, name: string) => `\${validated${propAccess(name)}}`,
@@ -191,24 +225,14 @@ function emitOperationFile(
         ? `client.${method}(\`${pathTemplate}${queryString}\`, body)`
         : `client.${method}(\`${pathTemplate}${queryString}\`)`;
 
-  // For POST/PUT with a request body, strip out path params to build the body
-  const bodyBlock = hasBody
-    ? pathParams.length > 0
-      ? (() => {
-          const destructureParts = pathParams.map((p) => {
-            if (isValidIdentifier(p.name)) return p.name;
-            // rename hyphenated: "tenant-id": _tenantId
-            const alias = `_${p.name.replace(/-/g, "_")}`;
-            return `"${p.name}": ${alias}`;
-          });
-          const voids = pathParams.map((p) => {
-            if (isValidIdentifier(p.name)) return p.name;
-            return `_${p.name.replace(/-/g, "_")}`;
-          });
-          return `  const { ${destructureParts.join(", ")}, ...body } = input as Record<string, unknown>;\n  void ${voids.join("; void ")};\n`;
-        })()
-      : `  const body = input;\n`
-    : ``;
+  // Path and query params go into the URL; everything else is the request body
+  const bodyBlock = !hasBody
+    ? ``
+    : wrappedBody
+      ? `  const body = validated.body;\n`
+      : allParams.length > 0
+        ? `  const { ${allParams.map((p, i) => `${JSON.stringify(p.name)}: _p${i}`).join(", ")}, ...body } = validated as Record<string, unknown>;\n  void ${allParams.map((_, i) => `_p${i}`).join("; void ")};\n`
+        : `  const body = validated;\n`;
 
   const queryParamsBlock =
     queryParams.length > 0
@@ -222,7 +246,7 @@ ${queryParams.map((p) => `  if (validated${propAccess(p.name)} !== undefined) pa
       ? `// frMapping: ${entry.frMapping.join(", ")}\n`
       : "// frMapping: []\n";
 
-  const schemaExtra = hasBody ? `.passthrough()` : ``;
+  const schemaExtra = hasBody && !wrappedBody ? `.passthrough()` : ``;
 
   const content = `${LICENSE_HEADER}
 
@@ -322,6 +346,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { OperatonClient } from "../http/client.js";
 import type { GuardConfig } from "../config.js";
 import { checkGuard } from "../guard/index.js";
+import { advertisedProperties } from "../tool-schema.js";
 ${customToolsImport}
 ${groupImports}
 
@@ -354,7 +379,7 @@ ${customToolsMerge}
         description: t.description,
         inputSchema: {
           type: "object" as const,
-          properties: jsonSchema.properties ?? {},
+          properties: advertisedProperties(jsonSchema.properties ?? {}),
           ...(jsonSchema.required && { required: jsonSchema.required }),
           ...Object.fromEntries(
             Object.entries(jsonSchema).filter(([key]) => !["type", "properties", "required"].includes(key))
@@ -424,6 +449,7 @@ async function main(): Promise<void> {
 
   // Step 1
   const specOps = parseSpec(specPath);
+  const components = loadComponents(specPath);
   console.error(`[operaton-mcp] generate: spec loaded — ${specOps.size} operations`);
 
   // Step 2
@@ -506,7 +532,7 @@ async function main(): Promise<void> {
 
   for (const [operationId, entry] of manifestEntries) {
     const specOp = specOps.get(operationId)!;
-    emitOperationFile(outDir, operationId, entry, specOp);
+    emitOperationFile(outDir, operationId, entry, specOp, components);
 
     const group = entry.tags[0] ?? "misc";
     if (!groups.has(group)) groups.set(group, []);
