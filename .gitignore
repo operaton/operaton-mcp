@@ -1,5 +1,8 @@
 _bmad
-.claude
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/operaton-mcp-release/
 .gemini
 .idea
 .github/skills
