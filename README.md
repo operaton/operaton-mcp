@@ -11,7 +11,7 @@
 
 ## Features
 
-- **Full REST API coverage** — 300+ operations across process definitions, instances, tasks, jobs, incidents, users, history, and decisions
+- **Broad REST API coverage** — 100+ tools across process definitions, deployments, instances, tasks, jobs, incidents, users, history, decisions, and migrations
 - **Multi-engine support** — connect to multiple Operaton instances from a single server
 - **Basic Auth & OIDC** — supports both HTTP Basic authentication and OAuth2 client credentials (OIDC)
 - **Access control guards** — configurable operation guards to restrict what the AI can do (`OPERATON_GUARD`, `OPERATON_DENY_RESOURCES`, `OPERATON_DENY_OPS`)
@@ -150,9 +150,9 @@ Manage deployed process definitions — browse, inspect, suspend, and delete BPM
 
 ### `deployment`
 
-Deploy, inspect, and manage Operaton deployments (BPMN, DMN, CMMN, and form files).
+Deploy, inspect, and manage Operaton deployments of BPMN and DMN resources.
 
-- **create** — upload a BPMN/DMN/CMMN resource to create a new deployment
+- **create** — upload a BPMN or DMN resource to create a new deployment
 - **list** — query deployments with optional filters; count total matches
 - **get by ID** — retrieve metadata for a specific deployment
 - **list resources** — list all resources included in a deployment
@@ -250,6 +250,7 @@ Query the audit trail of completed and historic process data.
 
 Deploy and evaluate DMN decision tables.
 
+- **deploy** — deploy a DMN decision table (`decision_deploy`)
 - **list** — query deployed decision definitions
 - **get by key** — retrieve a decision definition by key
 - **get XML by key** — fetch DMN XML for a decision
@@ -338,6 +339,7 @@ npm run test:integration
 src/
   index.ts          — MCP server entry point
   config.ts         — Configuration loading (env vars + config file)
+  tool-schema.ts    — Shapes the input schemas advertised in tools/list
   auth/
     token-manager.ts — OIDC client credentials token manager
   http/
@@ -352,6 +354,7 @@ resources/
   operaton-rest-api.json     — Authoritative OpenAPI 3.0.2 spec (never modify)
 scripts/
   generate.ts       — Code generation pipeline
+  json-schema-to-zod.ts — Converts OpenAPI request-body schemas into Zod input schemas
 docs/
   configuration.md  — Full configuration reference
 ```
