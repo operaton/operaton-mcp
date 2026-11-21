@@ -13,6 +13,17 @@ release:
     owner: operaton
     name: operaton-mcp
     overwrite: false
+    milestone:
+      name: '{{projectVersion}}'
+      close: true
+    issues:
+      enabled: true
+      comment: '🎉 This issue has been resolved in `{{tagName}}` ([Release Notes]({{releaseNotesUrl}}))'
+      applyMilestone: ALWAYS
+      label:
+        name: released
+        color: '#0E8A16'
+        description: Issue has been released
     changelog:
       formatted: ALWAYS
       preset: conventional-commits
