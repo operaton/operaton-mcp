@@ -17,10 +17,22 @@ import { getTokenManager } from "../auth/token-manager.js";
 import { normalize } from "./errors.js";
 import type { McpToolError } from "./errors.js";
 
+export interface MultipartFile {
+  name: string;
+  filename: string;
+  content: string;
+  contentType?: string;
+}
+
+export interface MultipartRequest {
+  fields: Record<string, string>;
+  files: MultipartFile[];
+}
+
 export interface OperatonClient {
   get(path: string): Promise<unknown>;
   post(path: string, body?: unknown): Promise<unknown>;
-  postMultipart(path: string, fields: Record<string, string>): Promise<unknown>;
+  postMultipart(path: string, request: MultipartRequest): Promise<unknown>;
   put(path: string, body?: unknown): Promise<unknown>;
   delete(path: string): Promise<unknown>;
 }
@@ -136,7 +148,7 @@ export function createOperatonClient(
 
   async function requestMultipart(
     path: string,
-    fields: Record<string, string>,
+    { fields, files }: MultipartRequest,
   ): Promise<unknown> {
     const resolvedPath = resolvePath(path);
     const url = `${baseUrl}${resolvedPath}`;
@@ -149,6 +161,14 @@ export function createOperatonClient(
     const form = new FormData();
     for (const [key, value] of Object.entries(fields)) {
       form.append(key, value);
+    }
+    // Operaton only accepts deployment resources as file parts carrying a filename
+    for (const file of files) {
+      form.append(
+        file.name,
+        new Blob([file.content], { type: file.contentType ?? "application/octet-stream" }),
+        file.filename,
+      );
     }
     const response = await fetch(url, {
       method: "POST",
@@ -168,7 +188,7 @@ export function createOperatonClient(
   return {
     get: (path) => request("GET", path),
     post: (path, body) => request("POST", path, body),
-    postMultipart: (path, fields) => requestMultipart(path, fields),
+    postMultipart: (path, request) => requestMultipart(path, request),
     put: (path, body) => request("PUT", path, body),
     delete: (path) => request("DELETE", path),
   };

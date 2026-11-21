@@ -26,11 +26,13 @@ jobs:
       contents: write   # push tags, create releases, push version bump commit
       id-token: write   # npm provenance attestation
     steps:
-      - name: Require main branch for real releases
-        if: '!inputs.dry_run && github.ref != ''refs/heads/main'''
+      - name: Require main or release branch for real releases
+        if: '!inputs.dry_run'
         run: |
-          echo "::error::Real releases must run from main (got $GITHUB_REF). Use dry_run for other branches."
-          exit 1
+          if [[ "$GITHUB_REF_NAME" != "main" && ! "$GITHUB_REF_NAME" =~ ^release/[0-9]+\.[0-9]+\.x$ ]]; then
+            echo "::error::Real releases must run from main or release/<major>.<minor>.x (got $GITHUB_REF). Use dry_run for other branches."
+            exit 1
+          fi
 
       - name: Require npm OTP for real releases
         if: '!inputs.dry_run'
@@ -131,16 +133,34 @@ jobs:
           git tag "v$VERSION"
           git push origin "v$VERSION"
 
-      - name: Publish to NPM (latest dist-tag, with provenance)
+      - name: Determine npm dist-tag
+        if: inputs.release_type == 'final'
+        run: |
+          DIST_TAG=latest
+          if [[ "$GITHUB_REF_NAME" == release/* ]]; then
+            # A patch release of an older line must not take 'latest' away from a newer one
+            LATEST=$(npm view "$(node -p "require('./package.json').name")" dist-tags.latest 2>/dev/null || echo "0.0.0")
+            if ! node -e '
+              const [a, b] = process.argv.slice(1).map((v) => v.split(".").map(Number));
+              const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+              process.exit(cmp > 0 ? 0 : 1);
+            ' "$VERSION" "$LATEST"; then
+              DIST_TAG="release-${VERSION%.*}"
+            fi
+          fi
+          echo "npm dist-tag: $DIST_TAG"
+          echo "DIST_TAG=$DIST_TAG" >> "$GITHUB_ENV"
+
+      - name: Publish to NPM (with provenance)
         if: inputs.release_type == 'final' && !inputs.dry_run
-        run: npm publish --provenance --otp "$NPM_OTP"
+        run: npm publish --provenance --tag "$DIST_TAG" --otp "$NPM_OTP"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_OTP: ${{ inputs.otp }}
 
       - name: Publish to NPM (dry run)
         if: inputs.release_type == 'final' && inputs.dry_run
-        run: npm publish --provenance --dry-run
+        run: npm publish --provenance --tag "$DIST_TAG" --dry-run
 
       - name: Create release via JReleaser
         if: inputs.release_type == 'final' && !inputs.dry_run
@@ -160,10 +180,15 @@ jobs:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_PROJECT_VERSION: ${{ env.VERSION }}
 
-      - name: Bump to next minor SNAPSHOT
+      - name: Bump to next SNAPSHOT
         if: inputs.release_type == 'final' && !inputs.dry_run
         run: |
-          npm version minor --no-git-tag-version
+          # release/<major>.<minor>.x branches carry patch releases; main moves to the next minor
+          if [[ "$GITHUB_REF_NAME" == release/* ]]; then
+            npm version patch --no-git-tag-version
+          else
+            npm version minor --no-git-tag-version
+          fi
           NEXT=$(node -p "require('./package.json').version")
           npm version "$NEXT-SNAPSHOT" --no-git-tag-version
           git config user.name "github-actions[bot]"
